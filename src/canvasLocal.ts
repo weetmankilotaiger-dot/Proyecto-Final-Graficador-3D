@@ -92,17 +92,17 @@ export class CanvasLocal {
 
   /**
    * Dibuja prismas o barras tridimensionales interpolando caras.
-   * Modificado para recibir un color CSS arbitrario y agregar luces/sombras 
-   * independientemente del espacio de color.
    */
   draw3DBar(x: number, y: number, w: number, h: number, color: string) {
-    const depthX = w * 0.4;
-    const depthY = w * 0.4;
+    // Para barras horizontales, 'h' (el grosor) es constante y 'w' varía.
+    // Usamos 'h' para calcular la profundidad y que todas las barras tengan el mismo efecto 3D.
+    const depthX = h * 0.4;
+    const depthY = h * 0.4;
 
     this.graphics.strokeStyle = '#222';
     this.graphics.lineWidth = 1;
 
-    // Cara superior (Techo) - Luz (Blanco transparente sobre color base)
+    // Cara superior (Techo)
     this.graphics.beginPath();
     this.graphics.moveTo(x, y);
     this.graphics.lineTo(x + depthX, y - depthY);
@@ -115,7 +115,7 @@ export class CanvasLocal {
     this.graphics.fill();
     this.graphics.stroke();
 
-    // Cara lateral derecha - Sombra (Negro transparente sobre color base)
+    // Cara lateral derecha
     this.graphics.beginPath();
     this.graphics.moveTo(x + w, y);
     this.graphics.lineTo(x + w + depthX, y - depthY);
@@ -142,46 +142,58 @@ export class CanvasLocal {
   drawBarChart(bars: { name: string, value: number, color: string }[]) {
     if (bars.length === 0) return;
 
-    // Espaciado ajustado para no cortar el 3D de las barras extremas
     const padding = 50;
     const drawWidth = this.maxX - padding * 2.5;
-    const drawHeight = this.maxY - padding * 2.8; // Más espacio inferior para el texto
+    const drawHeight = this.maxY - padding * 2.8;
 
     const maxVal = Math.max(...bars.map(b => b.value), 1);
-    const barWidth = drawWidth / bars.length;
+    
+    // =========================================================================
+    // ✨ AQUÍ SE HACE LA MAGIA PARA LA GRÁFICA HORIZONTAL ✨
+    // En lugar de dividir el ancho disponible (para barras verticales),
+    // dividimos la ALTURA disponible entre el número de barras.
+    // =========================================================================
+    const barThickness = drawHeight / bars.length;
 
-    // Ejes de fondo para la perspectiva del piso
+    // Ejes de fondo para la perspectiva
     this.graphics.strokeStyle = '#333';
     this.graphics.lineWidth = 2;
     this.graphics.beginPath();
-    this.graphics.moveTo(padding, padding);
+    // Eje vertical (Y)
+    this.graphics.moveTo(padding, padding - 20);
     this.graphics.lineTo(padding, padding + drawHeight);
-    this.graphics.lineTo(padding + drawWidth + barWidth * 0.4, padding + drawHeight);
+    // Eje horizontal (X)
+    this.graphics.lineTo(padding + drawWidth + 20, padding + drawHeight);
     this.graphics.stroke();
 
     for (let i = 0; i < bars.length; i++) {
       const bar = bars[i];
-      const barHeight = (bar.value / maxVal) * drawHeight;
+      
+      // La longitud de la barra (w) ahora depende del valor
+      const barLength = (bar.value / maxVal) * drawWidth;
 
-      // Un pequeño margen extra para que las barras no se peguen tanto
-      const x = padding + i * barWidth;
-      const y = padding + drawHeight - barHeight;
-      const actualBarWidth = barWidth * 0.7;
+      // La posición 'y' avanza hacia abajo en cada iteración
+      const x = padding;
+      const y = padding + i * barThickness;
+      const actualThickness = barThickness * 0.7; // 70% del espacio para la barra, 30% margen
 
-      // Dibujar la propia barra 3D (pasando el color literal del input)
-      this.draw3DBar(x + 5, y, actualBarWidth, barHeight, bar.color);
+      // Dibujar la propia barra 3D (pasando w = barLength, h = actualThickness)
+      this.draw3DBar(x, y + 10, barLength, actualThickness, bar.color);
 
-      // Texto representativo encima de cada barra
+      // =========================================================================
+      // TEXTOS REUBICADOS
+      // =========================================================================
       this.graphics.fillStyle = 'black';
       this.graphics.font = 'bold 13px sans-serif';
-      this.graphics.textAlign = 'center';
+      this.graphics.textAlign = 'left';
+      this.graphics.textBaseline = 'middle';
 
-      // Dibujamos el Valor Numérico arriba
-      this.graphics.fillText(bar.value.toString(), x + 5 + actualBarWidth / 2, y - barWidth * 0.4 - 5);
-
-      // Dibujamos el Nombre (Etiqueta) debajo de la barra
+      // Etiqueta a la izquierda (sobre la barra, justo antes de que empiece)
       this.graphics.fillStyle = '#444';
-      this.graphics.fillText(bar.name, x + 5 + actualBarWidth / 2, padding + drawHeight + 20);
+      this.graphics.fillText(bar.name, x, y + 2);
+
+      // Valor numérico a la derecha de la barra
+      this.graphics.fillText(bar.value.toString(), x + barLength + (actualThickness * 0.4) + 5, y + 10 + (actualThickness / 2));
     }
   }
 }
