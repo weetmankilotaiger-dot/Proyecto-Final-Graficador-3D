@@ -9,10 +9,10 @@ window.onload = () => {
     const addBarBtn = document.getElementById('addBarBtn');
     // Estado local principal: Lista de objetos de barras
     const barsData = [
-        { name: 'Alpha', value: 35, color: '#e6194b' },
-        { name: 'Beta', value: 80, color: '#3cb44b' },
-        { name: 'Gamma', value: 55, color: '#ffe119' },
-        { name: 'Delta', value: 100, color: '#4363d8' }
+        { name: 'Alpha', value: 35, color: '#000000' }, // Negro
+        { name: 'Beta', value: 80, color: '#552200' }, // Oscuro
+        { name: 'Gamma', value: 55, color: '#aa5500' }, // Medio
+        { name: 'Delta', value: 100, color: '#ff8800' } // Naranja
     ];
     /**
      * Limpia y actualiza el Canvas 2D
