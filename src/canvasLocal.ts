@@ -57,8 +57,14 @@ export class CanvasLocal {
    */
   paint() {
     let side = Math.min(this.maxX, this.maxY) * 0.9;
-    let radius = side / 2; // Radio de la circunferencia que circunscribe al hexágono
-    let sides = 6; // Número de lados (Hexágono)
+    let radius = side / 2; // Radio de la circunferencia que circunscribe al pentágono
+    
+    // =========================================================================
+    // AQUÍ SE MODIFICA EL ÁREA QUE DIBUJA EL PENTÁGONO
+    // Cambiando el valor de la variable 'sides', puedes cambiar la figura.
+    // 5 = Pentágono, 6 = Hexágono, 3 = Triángulo, etc.
+    // =========================================================================
+    let sides = 5; // Número de lados (Pentágono)
 
     // Generar los vértices iniciales del hexágono regular
     let points: { x: number, y: number }[] = [];
