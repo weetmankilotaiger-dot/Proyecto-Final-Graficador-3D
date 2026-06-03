@@ -42,8 +42,8 @@ export class CanvasLocal {
      */
     paint() {
         let side = Math.min(this.maxX, this.maxY) * 0.9;
-        let radius = side / 2; // Radio de la circunferencia que circunscribe al hexágono
-        let sides = 6; // Número de lados (Hexágono)
+        let radius = side / 2; // Radio de la circunferencia que circunscribe al pentágono
+        let sides = 5; // Número de lados (Pentágono)
         // Generar los vértices iniciales del hexágono regular
         let points = [];
         for (let i = 0; i < sides; i++) {
