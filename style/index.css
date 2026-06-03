@@ -1,3 +1,8 @@
+/* =========================================================================
+   ✨ MAGIA ESTÉTICA: FONDO GENERAL ✨
+   Aquí se establece el degradado oscuro (linear-gradient) y el tipo de letra 
+   (font-family) para todo el cuerpo de la página, dando un aspecto moderno.
+   ========================================================================= */
 body {
     background: linear-gradient(135deg, #0f172a 0%, #1e1e2f 100%);
     color: #e2e8f0;
@@ -5,7 +10,11 @@ body {
     min-height: 100vh;
 }
 
-/* Glassmorphism Navigation */
+/* =========================================================================
+   ✨ MAGIA ESTÉTICA: EFECTO CRISTAL (GLASSMORPHISM) ✨
+   La propiedad 'backdrop-filter: blur(12px)' es la responsable de hacer 
+   que el fondo se vea borroso como un cristal esmerilado detrás de la barra.
+   ========================================================================= */
 .navbar {
     background: rgba(15, 23, 42, 0.7) !important;
     backdrop-filter: blur(12px);
@@ -19,7 +28,11 @@ body {
     text-shadow: 0 0 10px rgba(56, 189, 248, 0.4);
 }
 
-/* Glassmorphism Card */
+/* =========================================================================
+   ✨ MAGIA ESTÉTICA: TARJETA TRASLÚCIDA ✨
+   Igual que arriba, usamos colores semitransparentes (rgba) y 'blur' 
+   para que la tarjeta principal no sea completamente sólida.
+   ========================================================================= */
 .card {
     background: rgba(30, 30, 47, 0.6) !important;
     backdrop-filter: blur(16px);
@@ -41,7 +54,12 @@ body {
     color: #cbd5e1;
 }
 
-/* Canvas Styling */
+/* =========================================================================
+   ✨ MAGIA ESTÉTICA: BRILLO DE NEÓN EN EL CANVAS ✨
+   'box-shadow' se usa aquí para crear un resplandor azul alrededor del 
+   área donde se dibuja. El borde azul brillante (border: 2px solid) le
+   da el toque futurista.
+   ========================================================================= */
 canvas {
     background: #000000;
     border: 2px solid #38bdf8;
@@ -51,11 +69,16 @@ canvas {
     transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
 
+/* Al pasar el ratón (hover) sobre el canvas, el resplandor se hace más grande */
 canvas:hover {
     box-shadow: 0 0 30px rgba(56, 189, 248, 0.6);
 }
 
-/* Input & Buttons */
+/* =========================================================================
+   ✨ MAGIA ESTÉTICA: INPUTS Y BOTONES ADAPTADOS AL MODO OSCURO ✨
+   Se cambian los bordes y los colores de fondo a negro transparente 
+   para que combinen con la temática oscura sin romper la visibilidad.
+   ========================================================================= */
 .input-group-text {
     background: rgba(56, 189, 248, 0.2);
     color: #38bdf8;
@@ -73,6 +96,7 @@ canvas:hover {
     border-color: #38bdf8;
 }
 
+/* Botón "Graficar" estilo azul brillante moderno */
 .btn-primary {
     background: #0ea5e9;
     border: none;
@@ -98,6 +122,7 @@ canvas:hover {
     border-color: rgba(255, 255, 255, 0.4);
 }
 
+/* Footer Oscuro */
 #footer {
     background: rgba(15, 23, 42, 0.8);
     border-top: 1px solid rgba(255, 255, 255, 0.1);
