@@ -355,16 +355,17 @@ if (btnLoadPinza) {
       // But both objects share the camera perspective implicitly since they are drawn in the same context.
       // Wait, updateLightingToObj() only updates 'obj'. We need to make sure ALL objects get the light!
       obj = baseObj;
+      obj = baseObj;
       updateLightingToObj();
       cv.getObjs().forEach(o => {
         o.sunX = obj.sunX;
         o.sunY = obj.sunY;
         o.sunZ = obj.sunZ;
-        o.ambientLight = obj.ambientLight;
       });
       
       document.getElementById('file-name-display').innerText = "Pinza Articulada";
-      document.getElementById('raw-file-content').value = "Multi-part object loaded.\n- pinza_base.txt\n- pinza_movil.txt";
+      const rawTextEl = document.getElementById('raw-file-content') as HTMLTextAreaElement;
+      if (rawTextEl) rawTextEl.value = "Multi-part object loaded.\n- pinza_base.txt\n- pinza_movil.txt";
       
       cv.paint();
     }).catch(err => console.error('Error loading pinzas:', err));

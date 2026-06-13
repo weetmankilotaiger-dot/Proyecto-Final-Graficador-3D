@@ -1,11 +1,11 @@
 import { Obj3D } from './Obj3D.js';
 import { CvZbuf } from './CvZbuf.js';
-var canvas;
-var graphics;
+let canvas;
+let graphics;
 canvas = document.getElementById('circlechart');
 graphics = canvas.getContext('2d');
-var cv;
-var obj;
+let cv;
+let obj;
 function leerArchivo(e) {
     var archivo = e.target.files[0];
     if (!archivo) {
@@ -17,7 +17,7 @@ function leerArchivo(e) {
     lector.onload = function (e) {
         var contenido = e.target.result;
         // Mostrar en visor crudo
-        var rawTextEl = document.getElementById('raw-file-content');
+        const rawTextEl = document.getElementById('raw-file-content');
         if (rawTextEl)
             rawTextEl.value = contenido;
         obj = new Obj3D();
@@ -26,8 +26,8 @@ function leerArchivo(e) {
             cv.setObj(obj);
             cv.paint();
             // Actualizar estadisticas de Vertices y Caras (Triangulos)
-            var verts = obj.w.length - 1; // El vertice 0 no se usa
-            var tris = obj.getPolyList().length;
+            const verts = obj.w.length - 1; // El vertice 0 no se usa
+            const tris = obj.getPolyList().length;
             document.getElementById('stat-verts').innerText = verts.toString();
             document.getElementById('bottom-stat-verts').innerText = verts.toString();
             document.getElementById('stat-tris').innerText = tris.toString();
@@ -40,25 +40,25 @@ function leerArchivo(e) {
 }
 function vp(dTheta, dPhi, fRho) {
     if (cv && cv.getObjs().length > 0) {
-        cv.getObjs().forEach(function (o) {
+        cv.getObjs().forEach(o => {
             o.vp(cv, dTheta, dPhi, fRho);
         });
     }
 }
 // Eventos
 document.getElementById('file-input').addEventListener('change', leerArchivo, false);
-var Pix, Piy;
-var Pfx, Pfy;
-var flag = false;
-var autoRotating = false;
-var animationFrameId;
+let Pix, Piy;
+let Pfx, Pfy;
+let flag = false;
+let autoRotating = false;
+let animationFrameId;
 function toggleAutoRotate() {
     if (!obj) {
         alert('Primero carga un modelo 3D.');
         return;
     }
     autoRotating = !autoRotating;
-    var btn = document.getElementById('btn-auto-rotate');
+    const btn = document.getElementById('btn-auto-rotate');
     if (autoRotating) {
         btn.innerHTML = 'II Detener';
         btn.classList.add('active-red');
@@ -73,9 +73,9 @@ function toggleAutoRotate() {
 function rotateLoop() {
     if (!autoRotating)
         return;
-    var speedVal = parseFloat(document.getElementById('input-velocidad').value) || 45;
+    let speedVal = parseFloat(document.getElementById('input-velocidad').value) || 45;
     // Convert 0-180 scale to a small rotation angle per frame
-    var dTheta = speedVal * 0.0005;
+    let dTheta = speedVal * 0.0005;
     vp(dTheta, 0, 1);
     animationFrameId = requestAnimationFrame(rotateLoop);
 }
@@ -90,8 +90,8 @@ function makeVizualization(evento) {
     if (flag && obj) {
         Pfx = evento.offsetX;
         Pfy = evento.offsetY;
-        var difX = Pfx - Pix;
-        var difY = Pfy - Piy;
+        let difX = Pfx - Pix;
+        let difY = Pfy - Piy;
         // Mejor sensibilidad para 360 grados
         vp(-difX * 0.01, difY * 0.01, 1);
         Pix = Pfx;
@@ -107,16 +107,16 @@ canvas.addEventListener('mousemove', makeVizualization);
 canvas.addEventListener('mouseleave', noDraw);
 // Eventos de Sliders de UI
 function setupSliders() {
-    var inputs = ['velocidad', 'luzX', 'luzY', 'luzZ', 'eyeZ', 'fov', 'apertura'];
-    inputs.forEach(function (id) {
-        var el = document.getElementById("input-".concat(id));
-        var valEl = document.getElementById("val-".concat(id));
+    const inputs = ['velocidad', 'luzX', 'luzY', 'luzZ', 'eyeZ', 'fov', 'apertura'];
+    inputs.forEach(id => {
+        const el = document.getElementById(`input-${id}`);
+        const valEl = document.getElementById(`val-${id}`);
         if (el && valEl) {
-            el.addEventListener('input', function (e) {
-                var val = e.target.value;
+            el.addEventListener('input', (e) => {
+                let val = e.target.value;
                 if (id === 'velocidad') {
-                    valEl.innerText = "".concat(val, ".0\u00B0/s");
-                    document.getElementById('bottom-stat-vel').innerText = "".concat(val, "\u00B0/s");
+                    valEl.innerText = `${val}.0°/s`;
+                    document.getElementById('bottom-stat-vel').innerText = `${val}°/s`;
                 }
                 else if (id === 'eyeZ') {
                     valEl.innerText = parseFloat(val).toFixed(1);
@@ -129,7 +129,7 @@ function setupSliders() {
                     }
                 }
                 else if (id === 'fov') {
-                    valEl.innerText = "".concat(val, "\u00B0");
+                    valEl.innerText = `${val}°`;
                     if (obj) {
                         // Default FOV slider is 38. We map 38 to a multiplier of 1.0.
                         obj.zoomMultiplier = 38.0 / parseFloat(val);
@@ -138,10 +138,10 @@ function setupSliders() {
                     }
                 }
                 else if (id === 'apertura') {
-                    valEl.innerText = "".concat(val, "\u00B0");
+                    valEl.innerText = `${val}°`;
                     if (cv && cv.getObjs().length > 1) {
                         // La pieza móvil es el índice 1
-                        var movil = cv.getObjs()[1];
+                        let movil = cv.getObjs()[1];
                         movil.localRotZ = -(parseFloat(val) * Math.PI) / 180.0;
                         cv.paint();
                     }
@@ -165,15 +165,15 @@ function updateLightingFromObj() {
     document.getElementById('input-luzZ').value = obj.sunZ.toFixed(2);
     document.getElementById('val-luzZ').innerText = obj.sunZ.toFixed(2);
     // Reset camera sliders to default when a new object is loaded
-    var eyeZInput = document.getElementById('input-eyeZ');
-    var eyeZVal = document.getElementById('val-eyeZ');
+    const eyeZInput = document.getElementById('input-eyeZ');
+    const eyeZVal = document.getElementById('val-eyeZ');
     if (eyeZInput && eyeZVal) {
         eyeZInput.value = '3.0';
         eyeZVal.innerText = '3.0';
         obj.rho = obj.rhoMin * 3.0;
     }
-    var fovInput = document.getElementById('input-fov');
-    var fovVal = document.getElementById('val-fov');
+    const fovInput = document.getElementById('input-fov');
+    const fovVal = document.getElementById('val-fov');
     if (fovInput && fovVal) {
         fovInput.value = '38';
         fovVal.innerText = '38°';
@@ -184,11 +184,11 @@ function updateLightingFromObj() {
 function updateLightingToObj() {
     if (!obj)
         return;
-    var lx = parseFloat(document.getElementById('input-luzX').value);
-    var ly = parseFloat(document.getElementById('input-luzY').value);
-    var lz = parseFloat(document.getElementById('input-luzZ').value);
+    const lx = parseFloat(document.getElementById('input-luzX').value);
+    const ly = parseFloat(document.getElementById('input-luzY').value);
+    const lz = parseFloat(document.getElementById('input-luzZ').value);
     if (cv && cv.getObjs().length > 0) {
-        cv.getObjs().forEach(function (o) {
+        cv.getObjs().forEach(o => {
             o.sunX = lx;
             o.sunY = ly;
             o.sunZ = lz;
@@ -198,7 +198,7 @@ function updateLightingToObj() {
 }
 // Resize handling básico
 function resizeCanvas() {
-    var container = document.getElementById('canvas-container');
+    const container = document.getElementById('canvas-container');
     if (container) {
         canvas.width = container.clientWidth;
         canvas.height = container.clientHeight;
@@ -209,14 +209,14 @@ function resizeCanvas() {
 }
 // Setup color palette swatches
 function setupColorSwatches() {
-    var swatches = document.querySelectorAll('.color-swatch');
-    swatches.forEach(function (swatch) {
-        swatch.addEventListener('click', function (e) {
-            swatches.forEach(function (s) { return s.classList.remove('active'); });
-            var target = e.target;
+    const swatches = document.querySelectorAll('.color-swatch');
+    swatches.forEach(swatch => {
+        swatch.addEventListener('click', (e) => {
+            swatches.forEach(s => s.classList.remove('active'));
+            let target = e.target;
             target.classList.add('active');
-            var bg = window.getComputedStyle(target).backgroundColor;
-            var match = bg.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/);
+            const bg = window.getComputedStyle(target).backgroundColor;
+            const match = bg.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/);
             if (match && obj) {
                 obj.baseColorR = parseInt(match[1]);
                 obj.baseColorG = parseInt(match[2]);
@@ -231,16 +231,15 @@ setupColorSwatches();
 window.addEventListener('resize', resizeCanvas);
 setTimeout(resizeCanvas, 100);
 // D-Pad Rotation Handling
-var manualRotationInterval;
-function startManualRotation(dTheta, dPhi, fRho) {
-    if (fRho === void 0) { fRho = 1; }
+let manualRotationInterval;
+function startManualRotation(dTheta, dPhi, fRho = 1) {
     if (!obj)
         return;
     // Rotate/zoom once immediately
     vp(dTheta, dPhi, fRho);
     // Then start interval for continuous action
     clearInterval(manualRotationInterval);
-    manualRotationInterval = window.setInterval(function () {
+    manualRotationInterval = window.setInterval(() => {
         vp(dTheta, dPhi, fRho);
     }, 30); // 30ms for smooth ~30fps
 }
@@ -248,25 +247,24 @@ function stopManualRotation() {
     clearInterval(manualRotationInterval);
 }
 function setupDPad() {
-    var btnUp = document.getElementById('btn-rot-up');
-    var btnDown = document.getElementById('btn-rot-down');
-    var btnLeft = document.getElementById('btn-rot-left');
-    var btnRight = document.getElementById('btn-rot-right');
-    var btnZoomIn = document.getElementById('btn-zoom-in');
-    var btnZoomOut = document.getElementById('btn-zoom-out');
-    var addHoldEvents = function (btn, dTheta, dPhi, fRho) {
-        if (fRho === void 0) { fRho = 1; }
+    const btnUp = document.getElementById('btn-rot-up');
+    const btnDown = document.getElementById('btn-rot-down');
+    const btnLeft = document.getElementById('btn-rot-left');
+    const btnRight = document.getElementById('btn-rot-right');
+    const btnZoomIn = document.getElementById('btn-zoom-in');
+    const btnZoomOut = document.getElementById('btn-zoom-out');
+    const addHoldEvents = (btn, dTheta, dPhi, fRho = 1) => {
         if (!btn)
             return;
-        btn.addEventListener('mousedown', function () { return startManualRotation(dTheta, dPhi, fRho); });
+        btn.addEventListener('mousedown', () => startManualRotation(dTheta, dPhi, fRho));
         btn.addEventListener('mouseup', stopManualRotation);
         btn.addEventListener('mouseleave', stopManualRotation);
         // Touch support for mobile
-        btn.addEventListener('touchstart', function (e) { e.preventDefault(); startManualRotation(dTheta, dPhi, fRho); });
-        btn.addEventListener('touchend', function (e) { e.preventDefault(); stopManualRotation(); });
-        btn.addEventListener('touchcancel', function (e) { e.preventDefault(); stopManualRotation(); });
+        btn.addEventListener('touchstart', (e) => { e.preventDefault(); startManualRotation(dTheta, dPhi, fRho); });
+        btn.addEventListener('touchend', (e) => { e.preventDefault(); stopManualRotation(); });
+        btn.addEventListener('touchcancel', (e) => { e.preventDefault(); stopManualRotation(); });
     };
-    var rotSpeed = 0.05; // Base rotation speed for D-pad
+    const rotSpeed = 0.05; // Base rotation speed for D-pad
     addHoldEvents(btnUp, 0, rotSpeed);
     addHoldEvents(btnDown, 0, -rotSpeed);
     addHoldEvents(btnLeft, -rotSpeed, 0);
@@ -277,7 +275,7 @@ function setupDPad() {
 }
 setupDPad();
 // Mouse wheel zoom
-canvas.addEventListener('wheel', function (e) {
+canvas.addEventListener('wheel', (e) => {
     e.preventDefault(); // Stop page from scrolling
     if (!obj)
         return;
@@ -288,26 +286,25 @@ canvas.addEventListener('wheel', function (e) {
         vp(0, 0, 1.1); // Zoom out
     }
 });
-var btnLoadPinza = document.getElementById('btn-load-pinza');
+const btnLoadPinza = document.getElementById('btn-load-pinza');
 if (btnLoadPinza) {
-    btnLoadPinza.addEventListener('click', function () {
+    btnLoadPinza.addEventListener('click', () => {
         // Stop auto rotation if it was running
         if (autoRotating)
             toggleAutoRotate();
         cv.clearObjs();
         Promise.all([
-            fetch('pinza_base.txt').then(function (r) { return r.text(); }),
-            fetch('pinza_movil.txt').then(function (r) { return r.text(); })
-        ]).then(function (_a) {
-            var baseData = _a[0], movilData = _a[1];
-            var baseObj = new Obj3D();
+            fetch('pinza_base.txt').then(r => r.text()),
+            fetch('pinza_movil.txt').then(r => r.text())
+        ]).then(([baseData, movilData]) => {
+            let baseObj = new Obj3D();
             if (baseObj.read(baseData)) {
                 baseObj.baseColorR = 100;
                 baseObj.baseColorG = 150;
                 baseObj.baseColorB = 200;
                 cv.addObj(baseObj);
             }
-            var movilObj = new Obj3D();
+            let movilObj = new Obj3D();
             if (movilObj.read(movilData)) {
                 movilObj.baseColorR = 200;
                 movilObj.baseColorG = 100;
@@ -322,28 +319,30 @@ if (btnLoadPinza) {
             // But both objects share the camera perspective implicitly since they are drawn in the same context.
             // Wait, updateLightingToObj() only updates 'obj'. We need to make sure ALL objects get the light!
             obj = baseObj;
+            obj = baseObj;
             updateLightingToObj();
-            cv.getObjs().forEach(function (o) {
+            cv.getObjs().forEach(o => {
                 o.sunX = obj.sunX;
                 o.sunY = obj.sunY;
                 o.sunZ = obj.sunZ;
-                o.ambientLight = obj.ambientLight;
             });
             document.getElementById('file-name-display').innerText = "Pinza Articulada";
-            document.getElementById('raw-file-content').value = "Multi-part object loaded.\n- pinza_base.txt\n- pinza_movil.txt";
+            const rawTextEl = document.getElementById('raw-file-content');
+            if (rawTextEl)
+                rawTextEl.value = "Multi-part object loaded.\n- pinza_base.txt\n- pinza_movil.txt";
             cv.paint();
-        }).catch(function (err) { return console.error('Error loading pinzas:', err); });
+        }).catch(err => console.error('Error loading pinzas:', err));
     });
 }
 // Cargar modelo por defecto al iniciar
-window.addEventListener('load', function () {
+window.addEventListener('load', () => {
     fetch('balon.txt')
-        .then(function (response) { return response.text(); })
-        .then(function (contenido) {
-        var fileNameDisplay = document.getElementById('file-name-display');
+        .then(response => response.text())
+        .then(contenido => {
+        let fileNameDisplay = document.getElementById('file-name-display');
         if (fileNameDisplay)
             fileNameDisplay.innerText = 'balon.txt';
-        var rawTextEl = document.getElementById('raw-file-content');
+        const rawTextEl = document.getElementById('raw-file-content');
         if (rawTextEl)
             rawTextEl.value = contenido;
         obj = new Obj3D();
@@ -355,18 +354,18 @@ window.addEventListener('load', function () {
             cv = new CvZbuf(graphics, canvas);
             cv.setObj(obj);
             cv.paint();
-            var verts = obj.w.length - 1;
-            var tris = obj.getPolyList().length;
-            var statVerts = document.getElementById('stat-verts');
+            const verts = obj.w.length - 1;
+            const tris = obj.getPolyList().length;
+            let statVerts = document.getElementById('stat-verts');
             if (statVerts)
                 statVerts.innerText = verts.toString();
-            var bottomStatVerts = document.getElementById('bottom-stat-verts');
+            let bottomStatVerts = document.getElementById('bottom-stat-verts');
             if (bottomStatVerts)
                 bottomStatVerts.innerText = verts.toString();
-            var statTris = document.getElementById('stat-tris');
+            let statTris = document.getElementById('stat-tris');
             if (statTris)
                 statTris.innerText = tris.toString();
-            var bottomStatTris = document.getElementById('bottom-stat-tris');
+            let bottomStatTris = document.getElementById('bottom-stat-tris');
             if (bottomStatTris)
                 bottomStatTris.innerText = tris.toString();
             updateLightingFromObj();
@@ -376,5 +375,5 @@ window.addEventListener('load', function () {
             }
         }
     })
-        .catch(function (err) { return console.error('Error loading default model:', err); });
+        .catch(err => console.error('Error loading default model:', err));
 });
