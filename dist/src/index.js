@@ -86,11 +86,9 @@ function handleMouse(evento) {
     Piy = evento.offsetY;
     flag = true;
     // Al hacer click, cerrar la pinza
-    if (cv && cv.getObjs().length >= 4) {
-        let movilHead = cv.getObjs()[2];
-        let movilHandle = cv.getObjs()[3];
-        movilHead.localRotZ = -(25 * Math.PI) / 180.0;
-        movilHandle.localRotZ = -(25 * Math.PI) / 180.0;
+    if (cv && cv.getObjs().length > 1) {
+        let movil = cv.getObjs()[1];
+        movil.localRotZ = -(25 * Math.PI) / 180.0;
         const apSlider = document.getElementById('input-apertura');
         if (apSlider) {
             apSlider.value = '25';
@@ -114,11 +112,9 @@ function makeVizualization(evento) {
 function noDraw() {
     flag = false;
     // Al soltar el click, abrir la pinza
-    if (cv && cv.getObjs().length >= 4) {
-        let movilHead = cv.getObjs()[2];
-        let movilHandle = cv.getObjs()[3];
-        movilHead.localRotZ = 0;
-        movilHandle.localRotZ = 0;
+    if (cv && cv.getObjs().length > 1) {
+        let movil = cv.getObjs()[1];
+        movil.localRotZ = 0;
         const apSlider = document.getElementById('input-apertura');
         if (apSlider) {
             apSlider.value = '0';
@@ -165,11 +161,9 @@ function setupSliders() {
                 }
                 else if (id === 'apertura') {
                     valEl.innerText = `${val}°`;
-                    if (cv && cv.getObjs().length >= 4) {
-                        let movilHead = cv.getObjs()[2];
-                        let movilHandle = cv.getObjs()[3];
-                        movilHead.localRotZ = -(parseFloat(val) * Math.PI) / 180.0;
-                        movilHandle.localRotZ = -(parseFloat(val) * Math.PI) / 180.0;
+                    if (cv && cv.getObjs().length > 1) {
+                        let movil = cv.getObjs()[1];
+                        movil.localRotZ = -(parseFloat(val) * Math.PI) / 180.0;
                         cv.paint();
                     }
                 }
@@ -317,58 +311,35 @@ canvas.addEventListener('wheel', (e) => {
 window.addEventListener('load', () => {
     cv = new CvZbuf(graphics, canvas);
     Promise.all([
-        fetch('cabeza_base.txt').then(r => r.text()),
-        fetch('mango_base.txt').then(r => r.text()),
-        fetch('cabeza_movil.txt').then(r => r.text()),
-        fetch('mango_movil.txt').then(r => r.text())
-    ]).then(([cbData, mbData, cmData, mmData]) => {
-        // 0: Cabeza Base (Golden/Brass)
-        let cabezaBase = new Obj3D();
-        if (cabezaBase.read(cbData)) {
-            cabezaBase.baseColorR = 190;
-            cabezaBase.baseColorG = 150;
-            cabezaBase.baseColorB = 50;
-            cv.addObj(cabezaBase);
+        fetch('pinza_base.txt').then(r => r.text()),
+        fetch('pinza_movil.txt').then(r => r.text())
+    ]).then(([baseData, movilData]) => {
+        let baseObj = new Obj3D();
+        if (baseObj.read(baseData)) {
+            baseObj.baseColorR = 190;
+            baseObj.baseColorG = 190;
+            baseObj.baseColorB = 195;
+            cv.addObj(baseObj);
         }
-        // 1: Mango Base (Red)
-        let mangoBase = new Obj3D();
-        if (mangoBase.read(mbData)) {
-            mangoBase.baseColorR = 200;
-            mangoBase.baseColorG = 30;
-            mangoBase.baseColorB = 30;
-            cv.addObj(mangoBase);
+        let movilObj = new Obj3D();
+        if (movilObj.read(movilData)) {
+            movilObj.baseColorR = 190;
+            movilObj.baseColorG = 190;
+            movilObj.baseColorB = 195;
+            movilObj.pivotX = 0;
+            movilObj.pivotY = 0;
+            movilObj.pivotZ = 0;
+            cv.addObj(movilObj);
         }
-        // 2: Cabeza Movil (Golden/Brass)
-        let cabezaMovil = new Obj3D();
-        if (cabezaMovil.read(cmData)) {
-            cabezaMovil.baseColorR = 190;
-            cabezaMovil.baseColorG = 150;
-            cabezaMovil.baseColorB = 50;
-            cabezaMovil.pivotX = 0;
-            cabezaMovil.pivotY = 0;
-            cabezaMovil.pivotZ = 0;
-            cv.addObj(cabezaMovil);
-        }
-        // 3: Mango Movil (Red)
-        let mangoMovil = new Obj3D();
-        if (mangoMovil.read(mmData)) {
-            mangoMovil.baseColorR = 200;
-            mangoMovil.baseColorG = 30;
-            mangoMovil.baseColorB = 30;
-            mangoMovil.pivotX = 0;
-            mangoMovil.pivotY = 0;
-            mangoMovil.pivotZ = 0;
-            cv.addObj(mangoMovil);
-        }
-        obj = cabezaBase;
+        obj = baseObj;
         updateLightingToObj();
         cv.getObjs().forEach(o => {
             o.sunX = obj.sunX;
             o.sunY = obj.sunY;
             o.sunZ = obj.sunZ;
         });
-        const verts = cabezaBase.w.length + mangoBase.w.length + cabezaMovil.w.length + mangoMovil.w.length - 4;
-        const tris = cabezaBase.getPolyList().length + mangoBase.getPolyList().length + cabezaMovil.getPolyList().length + mangoMovil.getPolyList().length;
+        const verts = baseObj.w.length + movilObj.w.length - 2;
+        const tris = baseObj.getPolyList().length + movilObj.getPolyList().length;
         let statVerts = document.getElementById('stat-verts');
         if (statVerts)
             statVerts.innerText = verts.toString();
