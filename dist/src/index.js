@@ -283,3 +283,42 @@ canvas.addEventListener('wheel', function (e) {
         vp(0, 0, 1.1); // Zoom out
     }
 });
+// Cargar modelo por defecto al iniciar
+window.addEventListener('load', function () {
+    fetch('balon.txt')
+        .then(function (response) { return response.text(); })
+        .then(function (contenido) {
+        var fileNameDisplay = document.getElementById('file-name-display');
+        if (fileNameDisplay)
+            fileNameDisplay.innerText = 'balon.txt';
+        var rawTextEl = document.getElementById('raw-file-content');
+        if (rawTextEl)
+            rawTextEl.value = contenido;
+        obj = new Obj3D();
+        if (obj.read(contenido)) {
+            // Establecer color naranja oficial para el balon
+            obj.baseColorR = 255;
+            obj.baseColorG = 100;
+            obj.baseColorB = 0;
+            cv = new CvZbuf(graphics, canvas);
+            cv.setObj(obj);
+            cv.paint();
+            var verts = obj.w.length - 1;
+            var tris = obj.getPolyList().length;
+            var statVerts = document.getElementById('stat-verts');
+            if (statVerts)
+                statVerts.innerText = verts.toString();
+            var bottomStatVerts = document.getElementById('bottom-stat-verts');
+            if (bottomStatVerts)
+                bottomStatVerts.innerText = verts.toString();
+            var statTris = document.getElementById('stat-tris');
+            if (statTris)
+                statTris.innerText = tris.toString();
+            var bottomStatTris = document.getElementById('bottom-stat-tris');
+            if (bottomStatTris)
+                bottomStatTris.innerText = tris.toString();
+            updateLightingFromObj();
+        }
+    })
+        .catch(function (err) { return console.error('Error loading default model:', err); });
+});

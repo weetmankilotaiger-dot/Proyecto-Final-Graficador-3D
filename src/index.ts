@@ -308,3 +308,46 @@ canvas.addEventListener('wheel', (e) => {
     vp(0, 0, 1.1); // Zoom out
   }
 });
+
+// Cargar modelo por defecto al iniciar
+window.addEventListener('load', () => {
+  fetch('balon.txt')
+    .then(response => response.text())
+    .then(contenido => {
+      let fileNameDisplay = document.getElementById('file-name-display');
+      if (fileNameDisplay) fileNameDisplay.innerText = 'balon.txt';
+      
+      const rawTextEl = document.getElementById('raw-file-content') as HTMLTextAreaElement;
+      if (rawTextEl) rawTextEl.value = contenido;
+      
+      obj = new Obj3D();
+      if (obj.read(contenido)) {
+        // Establecer color naranja oficial para el balon
+        obj.baseColorR = 255;
+        obj.baseColorG = 100;
+        obj.baseColorB = 0;
+        
+        cv = new CvZbuf(graphics, canvas);
+        cv.setObj(obj);
+        cv.paint();
+        
+        const verts = obj.w.length - 1;
+        const tris = obj.getPolyList().length;
+        
+        let statVerts = document.getElementById('stat-verts');
+        if (statVerts) statVerts.innerText = verts.toString();
+        
+        let bottomStatVerts = document.getElementById('bottom-stat-verts');
+        if (bottomStatVerts) bottomStatVerts.innerText = verts.toString();
+        
+        let statTris = document.getElementById('stat-tris');
+        if (statTris) statTris.innerText = tris.toString();
+        
+        let bottomStatTris = document.getElementById('bottom-stat-tris');
+        if (bottomStatTris) bottomStatTris.innerText = tris.toString();
+        
+        updateLightingFromObj();
+      }
+    })
+    .catch(err => console.error('Error loading default model:', err));
+});
