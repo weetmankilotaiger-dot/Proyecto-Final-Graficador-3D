@@ -339,6 +339,38 @@
       border: 2px solid #fff;
       box-shadow: 0 0 12px currentColor;
     }
+
+    /* Responsive Mobile Styles */
+    @media (max-width: 800px) {
+      body, html {
+        height: auto;
+        overflow: auto;
+      }
+      .app-container {
+        flex-direction: column;
+        height: auto;
+      }
+      .left-panel, .right-panel {
+        width: 90%;
+        margin: 15px auto;
+      }
+      .canvas-container {
+        min-height: 50vh;
+        width: 100%;
+      }
+      .topbar {
+        height: auto;
+        flex-direction: column;
+        padding: 15px;
+        gap: 10px;
+      }
+      .status-live {
+        align-self: center;
+      }
+      .color-grid {
+        grid-template-columns: repeat(6, 1fr);
+      }
+    }
   </style>
 </head>
 <body>

@@ -318,6 +318,10 @@ window.addEventListener('load', function () {
             if (bottomStatTris)
                 bottomStatTris.innerText = tris.toString();
             updateLightingFromObj();
+            // Auto-start rotation
+            if (!autoRotating) {
+                toggleAutoRotate();
+            }
         }
     })
         .catch(function (err) { return console.error('Error loading default model:', err); });
