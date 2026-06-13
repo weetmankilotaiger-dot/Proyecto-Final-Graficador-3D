@@ -103,6 +103,17 @@ function handleMouse(evento: any) {
   Pix = evento.offsetX;
   Piy = evento.offsetY;
   flag = true;
+  // Al hacer click, cerrar la pinza
+  if (cv && cv.getObjs().length > 1) {
+     let movil = cv.getObjs()[1];
+     movil.localRotZ = -(25 * Math.PI) / 180.0;
+     const apSlider = <HTMLInputElement>document.getElementById('input-apertura');
+     if (apSlider) {
+       apSlider.value = '25';
+       document.getElementById('val-apertura').innerText = '25°';
+     }
+     cv.paint();
+  }
 }
 
 function makeVizualization(evento: any) {
@@ -122,6 +133,17 @@ function makeVizualization(evento: any) {
 
 function noDraw() {
   flag = false;
+  // Al soltar el click, abrir la pinza
+  if (cv && cv.getObjs().length > 1) {
+     let movil = cv.getObjs()[1];
+     movil.localRotZ = 0;
+     const apSlider = <HTMLInputElement>document.getElementById('input-apertura');
+     if (apSlider) {
+       apSlider.value = '0';
+       document.getElementById('val-apertura').innerText = '0°';
+     }
+     cv.paint();
+  }
 }
 
 canvas.addEventListener('mousedown', handleMouse);
@@ -317,105 +339,60 @@ canvas.addEventListener('wheel', (e) => {
   }
 });
 
-const btnLoadPinza = document.getElementById('btn-load-pinza');
-if (btnLoadPinza) {
-  btnLoadPinza.addEventListener('click', () => {
-    // Stop auto rotation if it was running
-    if (autoRotating) toggleAutoRotate();
-    
-    cv.clearObjs();
-    
-    Promise.all([
-      fetch('pinza_base.txt').then(r => r.text()),
-      fetch('pinza_movil.txt').then(r => r.text())
-    ]).then(([baseData, movilData]) => {
-      let baseObj = new Obj3D();
-      if (baseObj.read(baseData)) {
-        baseObj.baseColorR = 100;
-        baseObj.baseColorG = 150;
-        baseObj.baseColorB = 200;
-        cv.addObj(baseObj);
-      }
-      
-      let movilObj = new Obj3D();
-      if (movilObj.read(movilData)) {
-        movilObj.baseColorR = 200;
-        movilObj.baseColorG = 100;
-        movilObj.baseColorB = 100;
-        
-        // Asignamos el pivote de la pieza movil
-        movilObj.pivotX = 0;
-        movilObj.pivotY = -0.5;
-        movilObj.pivotZ = 0.2;
-        
-        cv.addObj(movilObj);
-      }
-      
-      // We set 'obj' to baseObj so global UI logic (like lighting) still binds to it.
-      // But both objects share the camera perspective implicitly since they are drawn in the same context.
-      // Wait, updateLightingToObj() only updates 'obj'. We need to make sure ALL objects get the light!
-      obj = baseObj;
-      obj = baseObj;
-      updateLightingToObj();
-      cv.getObjs().forEach(o => {
-        o.sunX = obj.sunX;
-        o.sunY = obj.sunY;
-        o.sunZ = obj.sunZ;
-      });
-      
-      document.getElementById('file-name-display').innerText = "Pinza Articulada";
-      const rawTextEl = document.getElementById('raw-file-content') as HTMLTextAreaElement;
-      if (rawTextEl) rawTextEl.value = "Multi-part object loaded.\n- pinza_base.txt\n- pinza_movil.txt";
-      
-      cv.paint();
-    }).catch(err => console.error('Error loading pinzas:', err));
-  });
-}
-
-// Cargar modelo por defecto al iniciar
+// Cargar pinza por defecto al iniciar
 window.addEventListener('load', () => {
-  fetch('balon.txt')
-    .then(response => response.text())
-    .then(contenido => {
-      let fileNameDisplay = document.getElementById('file-name-display');
-      if (fileNameDisplay) fileNameDisplay.innerText = 'balon.txt';
-      
-      const rawTextEl = document.getElementById('raw-file-content') as HTMLTextAreaElement;
-      if (rawTextEl) rawTextEl.value = contenido;
-      
-      obj = new Obj3D();
-      if (obj.read(contenido)) {
-        // Establecer color naranja oficial para el balon
-        obj.baseColorR = 255;
-        obj.baseColorG = 100;
-        obj.baseColorB = 0;
-        
-        cv = new CvZbuf(graphics, canvas);
-        cv.setObj(obj);
-        cv.paint();
-        
-        const verts = obj.w.length - 1;
-        const tris = obj.getPolyList().length;
-        
-        let statVerts = document.getElementById('stat-verts');
-        if (statVerts) statVerts.innerText = verts.toString();
-        
-        let bottomStatVerts = document.getElementById('bottom-stat-verts');
-        if (bottomStatVerts) bottomStatVerts.innerText = verts.toString();
-        
-        let statTris = document.getElementById('stat-tris');
-        if (statTris) statTris.innerText = tris.toString();
-        
-        let bottomStatTris = document.getElementById('bottom-stat-tris');
-        if (bottomStatTris) bottomStatTris.innerText = tris.toString();
-        
-        updateLightingFromObj();
-        
-        // Auto-start rotation
-        if (!autoRotating) {
-          toggleAutoRotate();
-        }
-      }
-    })
-    .catch(err => console.error('Error loading default model:', err));
+  cv = new CvZbuf(graphics, canvas);
+  Promise.all([
+    fetch('pinza_base.txt').then(r => r.text()),
+    fetch('pinza_movil.txt').then(r => r.text())
+  ]).then(([baseData, movilData]) => {
+    let baseObj = new Obj3D();
+    if (baseObj.read(baseData)) {
+      baseObj.baseColorR = 100;
+      baseObj.baseColorG = 150;
+      baseObj.baseColorB = 200;
+      cv.addObj(baseObj);
+    }
+    
+    let movilObj = new Obj3D();
+    if (movilObj.read(movilData)) {
+      movilObj.baseColorR = 200;
+      movilObj.baseColorG = 100;
+      movilObj.baseColorB = 100;
+      movilObj.pivotX = 0;
+      movilObj.pivotY = -0.5;
+      movilObj.pivotZ = 0.2;
+      cv.addObj(movilObj);
+    }
+    
+    obj = baseObj;
+    updateLightingToObj();
+    cv.getObjs().forEach(o => {
+      o.sunX = obj.sunX;
+      o.sunY = obj.sunY;
+      o.sunZ = obj.sunZ;
+    });
+    
+    const verts = baseObj.w.length + movilObj.w.length - 2;
+    const tris = baseObj.getPolyList().length + movilObj.getPolyList().length;
+    
+    let statVerts = document.getElementById('stat-verts');
+    if (statVerts) statVerts.innerText = verts.toString();
+    
+    let statTris = document.getElementById('stat-tris');
+    if (statTris) statTris.innerText = tris.toString();
+    
+    let fileNameDisplay = document.getElementById('file-name-display');
+    if (fileNameDisplay) fileNameDisplay.innerText = 'Pinza Articulada';
+    
+    const rawTextEl = document.getElementById('raw-file-content') as HTMLTextAreaElement;
+    if (rawTextEl) rawTextEl.value = "Multi-part object loaded.\n- pinza_base.txt\n- pinza_movil.txt";
+    
+    updateLightingFromObj();
+    cv.paint();
+    
+    if (!autoRotating) {
+      toggleAutoRotate();
+    }
+  }).catch(err => console.error('Error loading default model:', err));
 });
