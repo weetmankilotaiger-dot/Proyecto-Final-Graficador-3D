@@ -31,11 +31,15 @@ def write_obj(filename, parts):
             faces.append([idx + offset for idx in face])
             
     with open(filename, 'w') as f:
-        f.write(f"{len(vertices)} {len(faces)}\n")
-        for v in vertices:
-            f.write(f"{v[0]:.2f} {v[1]:.2f} {v[2]:.2f}\n")
+        # Escribir vertices en formato "id x y z"
+        for i, v in enumerate(vertices):
+            f.write(f"{i+1} {v[0]:.2f} {v[1]:.2f} {v[2]:.2f}\n")
+        
+        f.write("Faces:\n")
+        
+        # Escribir caras en formato "v1 v2 v3 v4 ."
         for face in faces:
-            f.write(f"{len(face)} " + " ".join(str(idx) for idx in face) + "\n")
+            f.write(" ".join(str(idx) for idx in face) + " .\n")
 
 # El pivote de rotacion estara en (0, -0.5, 0)
 # Pinza Base (Mango Izquierdo + Mandibula Derecha + Eje central)
