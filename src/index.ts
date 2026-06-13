@@ -1,12 +1,5 @@
-
-//import { Input } from './Input.js';
 import { Obj3D } from './Obj3D.js';
-//import { Canvas3D } from './Canvas3D.js';
-//import { CvWireframe } from './CvWireFrame.js';
-//import { CvHLines } from './CvHLines.js';
 import { CvZbuf } from './CvZbuf.js';
-import { Rota3D } from './Rota3D.js';
-import { Point3D } from './point3D.js';
 
 let canvas: HTMLCanvasElement;
 let graphics: CanvasRenderingContext2D;
@@ -16,199 +9,114 @@ graphics = canvas.getContext('2d');
 
 let cv: CvZbuf;
 let obj: Obj3D;
-let ang: number=0;
 
 function leerArchivo(e:any) {
   var archivo = e.target.files[0];
   if (!archivo) {
     return;
   }
+  
+  // Mostrar nombre del archivo
+  document.getElementById('file-name-display').innerText = archivo.name;
+  
   var lector = new FileReader();
   lector.onload = function(e) {
-    var contenido = e.target.result;
-    mostrarContenido(contenido);
+    var contenido = e.target.result as string;
+    
+    // Mostrar en visor crudo
+    const rawTextEl = document.getElementById('raw-file-content') as HTMLTextAreaElement;
+    if (rawTextEl) rawTextEl.value = contenido;
+    
     obj = new Obj3D();
     if (obj.read(contenido)) {
-      //sDir = sDir1;
       cv = new CvZbuf(graphics, canvas);
       cv.setObj(obj);
       cv.paint();
+      
+      // Actualizar estadisticas de Vertices y Caras (Triangulos)
+      const verts = obj.w.length - 1; // El vertice 0 no se usa
+      const tris = obj.getPolyList().length;
+      
+      document.getElementById('stat-verts').innerText = verts.toString();
+      document.getElementById('bottom-stat-verts').innerText = verts.toString();
+      
+      document.getElementById('stat-tris').innerText = tris.toString();
+      document.getElementById('bottom-stat-tris').innerText = tris.toString();
+      
+      // Init sliders values based on object defaults
+      updateLightingFromObj();
     }
   };
   lector.readAsText(archivo);
 }
 
-function mostrarContenido(contenido:any) {
-  var elemento = document.getElementById('contenido-archivo');
-  //
-  //readObject(new Input(contenido));
-  elemento.innerHTML = contenido;
-}
-
 function vp(dTheta:number, dPhi:number, fRho:number):void{  // Viewpoint
   if (obj != undefined) {
-    let obj: Obj3D = cv.getObj();
-    if (!obj.vp(cv, dTheta, dPhi, fRho))
-      alert('datos no validos');
+    let currentObj: Obj3D = cv.getObj();
+    if (!currentObj.vp(cv, dTheta, dPhi, fRho))
+      console.log('datos no validos o limites de zoom alcanzados');
   }
-  else
-    alert('aun no has leido un archivo');
 }
 
-function eyeDownFunc() {
-  vp(0, 0.1, 1);
-}
-
-function eyeUpFunc() {
-  vp(0, -0.1, 1);
-}
-
-function eyeLeftFunc() {
-  vp(-0.1, 0, 1);
-}
-
-function eyeRightFunc() {
-  vp(0.1, 0, 1);
-}
-
-function incrDistFunc() {
-  vp(0, 0, 2);
-}
-
-function decrDistFunc() {
-  vp(0, 0, 0.5);
-}
-
-function pza1TR() {
-  let tr = 0.1;
- 	
-	
-  for (let i = 17; i <= 20; i++){
-    obj.w[i].x = obj.w[i].x + tr;
-	}
-	cv.setObj(obj);
-  cv.paint();	
-}
-
-
-function pza1DerFunc() {
-  let af = 10;
- 	
-	Rota3D.initRotate( obj.w[139], obj.w[140], af*Math.PI/180);	
-	
-  for (let i = 201; i <= 238; i++){
-    obj.w[i] = Rota3D.rotate(obj.w[i]);
-	}
-	cv.setObj(obj);
-  cv.paint();	
-}
-
-function pza1IzqFunc() {
-  let af = -10;
- 	
-	Rota3D.initRotate( obj.w[139], obj.w[140], af*Math.PI/180);	
-	
-  for (let i = 201; i <= 238; i++){
-    obj.w[i] = Rota3D.rotate(obj.w[i]);
-	}
-	cv.setObj(obj);
-  cv.paint();	
-}
-function pza12DerFunc() {
-  let af = 10;
-  Rota3D.initRotate(obj.w[29], obj.w[30], af * Math.PI / 180);
-	
-  for (let i = 101; i <= 140; i++){
-    obj.w[i] = Rota3D.rotate(obj.w[i]);
-  }
-  for (let i = 201; i <= 238; i++){
-    obj.w[i] = Rota3D.rotate(obj.w[i]);
-	}
-	cv.setObj(obj);
-  cv.paint();	
-}
-
-function pza12IzqFunc() {
-  let af = -10;
-	Rota3D.initRotate( obj.w[29], obj.w[30], af*Math.PI/180);	
-	
-  for (let i = 101; i <= 140; i++){
-    obj.w[i] = Rota3D.rotate(obj.w[i]);
-	}
-  for (let i = 201; i <= 238; i++){
-    obj.w[i] = Rota3D.rotate(obj.w[i]);
-	}
-  
-	cv.setObj(obj);
-  cv.paint();	
-}
-
+// Eventos
 document.getElementById('file-input').addEventListener('change', leerArchivo, false);
-document.getElementById('eyeDown').addEventListener('click', eyeDownFunc, false);
-document.getElementById('eyeUp').addEventListener('click', eyeUpFunc, false);
-document.getElementById('eyeLeft').addEventListener('click', eyeLeftFunc, false);
-document.getElementById('eyeRight').addEventListener('click', eyeRightFunc, false);
-document.getElementById('incrDist').addEventListener('click', incrDistFunc, false);
-document.getElementById('decrDist').addEventListener('click', decrDistFunc, false);
-
-
-//movimiento de piezas
-document.getElementById('pza1Izq').addEventListener('click', pza1IzqFunc, false);
-document.getElementById('pza1Der').addEventListener('click', pza1DerFunc, false);
-document.getElementById('pza12Izq').addEventListener('click', pza12IzqFunc, false);
-document.getElementById('pza12Der').addEventListener('click', pza12DerFunc, false);
-
-document.getElementById('pzatr').addEventListener('click', pza1TR, false);
 
 let Pix: number, Piy: number;
 let Pfx: number, Pfy: number;
-let theta = 0.3, phi = 1.3, SensibilidadX = 0.02, SensibilidadY = 0.02;
 let flag: boolean = false;
+let autoRotating: boolean = false;
+let animationFrameId: number;
 
+function toggleAutoRotate() {
+  if (!obj) {
+    alert('Primero carga un modelo 3D.');
+    return;
+  }
+  
+  autoRotating = !autoRotating;
+  const btn = document.getElementById('btn-auto-rotate');
+  
+  if (autoRotating) {
+    btn.innerHTML = 'II Detener';
+    btn.classList.add('active-red');
+    rotateLoop();
+  } else {
+    btn.innerHTML = '▶ Animar';
+    btn.classList.remove('active-red');
+    cancelAnimationFrame(animationFrameId);
+  }
+}
+
+function rotateLoop() {
+  if (!autoRotating) return;
+  let speedVal = parseFloat((<HTMLInputElement>document.getElementById('input-velocidad')).value) || 45;
+  // Convert 0-180 scale to a small rotation angle per frame
+  let dTheta = speedVal * 0.0005;
+  vp(dTheta, 0, 1);
+  animationFrameId = requestAnimationFrame(rotateLoop);
+}
+
+document.getElementById('btn-auto-rotate').addEventListener('click', toggleAutoRotate, false);
+
+// Manipulación 360 (Ratón)
 function handleMouse(evento: any) {
-  Pix=evento.offsetX;
+  Pix = evento.offsetX;
   Piy = evento.offsetY;
   flag = true;
 }
 
 function makeVizualization(evento: any) {
-  if (flag) {
+  if (flag && obj) {
     Pfx = evento.offsetX;
     Pfy = evento.offsetY;
-    //console.log(Pfx, Pfy)
-    let difX = Pix - Pfx;
+    let difX = Pfx - Pix;
     let difY = Pfy - Piy;
-    vp(0, 0.1 * difY / 50, 1);
-    Piy = Pfy;
-    vp(0.1 * difX, 0 / 50, 1);
+    
+    // Mejor sensibilidad para 360 grados
+    vp(-difX * 0.01, difY * 0.01, 1);
+    
     Pix = Pfx;
-    /*if( Piy>Pfy+1 ){
-      phi += SensibilidadY;
-      vp(0, 0.1*, 1);
-      //cv.redibuja(theta, phi, tamanoObjeto);
-      Piy=Pfy;
-    }
-
-    if(Pfy>Piy+1){
-      phi -= SensibilidadY;
-      vp(0,-0.1, 1);
-      //cv.redibuja(theta, phi, tamanoObjeto);
-      Piy=Pfy;
-    }*/
-
-    /*if (Pix > Pfx + 1) {
-      theta += SensibilidadX;
-      vp(0.1, 0, 1);
-      //cv.redibuja(theta, phi, tamanoObjeto);
-      Pix = Pfx;
-    }
-        
-    if (Pfx > Pix + 1) {
-      theta -= SensibilidadX;
-      vp(-0.1, 0, 1);
-      //cv.redibuja(theta, phi, tamanoObjeto);
-      Pix = Pfx;
-    }*/
+    Piy = Pfy;
   }
 }
 
@@ -219,3 +127,184 @@ function noDraw() {
 canvas.addEventListener('mousedown', handleMouse);
 canvas.addEventListener('mouseup', noDraw);
 canvas.addEventListener('mousemove', makeVizualization);
+canvas.addEventListener('mouseleave', noDraw);
+
+// Eventos de Sliders de UI
+function setupSliders() {
+  const inputs = ['velocidad', 'luzX', 'luzY', 'luzZ', 'eyeZ', 'fov'];
+  inputs.forEach(id => {
+    const el = document.getElementById(`input-${id}`);
+    const valEl = document.getElementById(`val-${id}`);
+    if (el && valEl) {
+      el.addEventListener('input', (e: any) => {
+        let val = e.target.value;
+        if (id === 'velocidad') {
+          valEl.innerText = `${val}.0°/s`;
+          document.getElementById('bottom-stat-vel').innerText = `${val}°/s`;
+        } else if (id === 'eyeZ') {
+          valEl.innerText = parseFloat(val).toFixed(1);
+          if (obj) {
+            // Map the generic slider (1 to 20) to actual eye distance based on obj's bounds
+            // rhoMin is the closest distance. Default rho is 3 * rhoMin.
+            obj.rho = obj.rhoMin * parseFloat(val);
+            if (cv) cv.paint();
+          }
+        } else if (id === 'fov') {
+          valEl.innerText = `${val}°`;
+          if (obj) {
+            // Default FOV slider is 38. We map 38 to a multiplier of 1.0.
+            obj.zoomMultiplier = 38.0 / parseFloat(val);
+            if (cv) cv.paint();
+          }
+        } else {
+          valEl.innerText = parseFloat(val).toFixed(2);
+          updateLightingToObj();
+        }
+      });
+    }
+  });
+}
+setupSliders();
+
+function updateLightingFromObj() {
+  if (!obj) return;
+  (<HTMLInputElement>document.getElementById('input-luzX')).value = obj.sunX.toFixed(2);
+  document.getElementById('val-luzX').innerText = obj.sunX.toFixed(2);
+  
+  (<HTMLInputElement>document.getElementById('input-luzY')).value = obj.sunY.toFixed(2);
+  document.getElementById('val-luzY').innerText = obj.sunY.toFixed(2);
+  
+  (<HTMLInputElement>document.getElementById('input-luzZ')).value = obj.sunZ.toFixed(2);
+  document.getElementById('val-luzZ').innerText = obj.sunZ.toFixed(2);
+  
+  // Reset camera sliders to default when a new object is loaded
+  const eyeZInput = <HTMLInputElement>document.getElementById('input-eyeZ');
+  const eyeZVal = document.getElementById('val-eyeZ');
+  if (eyeZInput && eyeZVal) {
+    eyeZInput.value = '3.0';
+    eyeZVal.innerText = '3.0';
+    obj.rho = obj.rhoMin * 3.0;
+  }
+  
+  const fovInput = <HTMLInputElement>document.getElementById('input-fov');
+  const fovVal = document.getElementById('val-fov');
+  if (fovInput && fovVal) {
+    fovInput.value = '38';
+    fovVal.innerText = '38°';
+    obj.zoomMultiplier = 1.0;
+  }
+}
+
+function updateLightingToObj() {
+  if (!obj) return;
+  let lx = parseFloat((<HTMLInputElement>document.getElementById('input-luzX')).value);
+  let ly = parseFloat((<HTMLInputElement>document.getElementById('input-luzY')).value);
+  let lz = parseFloat((<HTMLInputElement>document.getElementById('input-luzZ')).value);
+  
+  // Normalize vector
+  let len = Math.sqrt(lx*lx + ly*ly + lz*lz);
+  if (len === 0) { lx = 0; ly = 1; lz = 0; len = 1; }
+  
+  obj.sunX = lx / len;
+  obj.sunY = ly / len;
+  obj.sunZ = lz / len;
+  
+  if (cv) cv.paint();
+}
+
+// Resize handling básico
+function resizeCanvas() {
+  const container = document.getElementById('canvas-container');
+  if (container) {
+    canvas.width = container.clientWidth;
+    canvas.height = container.clientHeight;
+    if (obj && cv) {
+      cv.paint();
+    }
+  }
+}
+// Setup color palette swatches
+function setupColorSwatches() {
+  const swatches = document.querySelectorAll('.color-swatch');
+  swatches.forEach(swatch => {
+    swatch.addEventListener('click', (e) => {
+      swatches.forEach(s => s.classList.remove('active'));
+      let target = e.target as HTMLElement;
+      target.classList.add('active');
+      
+      const bg = window.getComputedStyle(target).backgroundColor;
+      const match = bg.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/);
+      if (match && obj) {
+        obj.baseColorR = parseInt(match[1]);
+        obj.baseColorG = parseInt(match[2]);
+        obj.baseColorB = parseInt(match[3]);
+        if (cv) cv.paint();
+      }
+    });
+  });
+}
+setupColorSwatches();
+
+window.addEventListener('resize', resizeCanvas);
+setTimeout(resizeCanvas, 100);
+
+// D-Pad Rotation Handling
+let manualRotationInterval: number;
+
+function startManualRotation(dTheta: number, dPhi: number, fRho: number = 1) {
+  if (!obj) return;
+  // Rotate/zoom once immediately
+  vp(dTheta, dPhi, fRho);
+  // Then start interval for continuous action
+  clearInterval(manualRotationInterval);
+  manualRotationInterval = window.setInterval(() => {
+    vp(dTheta, dPhi, fRho);
+  }, 30); // 30ms for smooth ~30fps
+}
+
+function stopManualRotation() {
+  clearInterval(manualRotationInterval);
+}
+
+function setupDPad() {
+  const btnUp = document.getElementById('btn-rot-up');
+  const btnDown = document.getElementById('btn-rot-down');
+  const btnLeft = document.getElementById('btn-rot-left');
+  const btnRight = document.getElementById('btn-rot-right');
+  const btnZoomIn = document.getElementById('btn-zoom-in');
+  const btnZoomOut = document.getElementById('btn-zoom-out');
+
+  const addHoldEvents = (btn: HTMLElement, dTheta: number, dPhi: number, fRho: number = 1) => {
+    if (!btn) return;
+    btn.addEventListener('mousedown', () => startManualRotation(dTheta, dPhi, fRho));
+    btn.addEventListener('mouseup', stopManualRotation);
+    btn.addEventListener('mouseleave', stopManualRotation);
+    
+    // Touch support for mobile
+    btn.addEventListener('touchstart', (e) => { e.preventDefault(); startManualRotation(dTheta, dPhi, fRho); });
+    btn.addEventListener('touchend', (e) => { e.preventDefault(); stopManualRotation(); });
+    btn.addEventListener('touchcancel', (e) => { e.preventDefault(); stopManualRotation(); });
+  };
+
+  const rotSpeed = 0.05; // Base rotation speed for D-pad
+  addHoldEvents(btnUp, 0, rotSpeed);
+  addHoldEvents(btnDown, 0, -rotSpeed);
+  addHoldEvents(btnLeft, -rotSpeed, 0);
+  addHoldEvents(btnRight, rotSpeed, 0);
+  
+  // Zoom functionality for buttons (continuous)
+  addHoldEvents(btnZoomIn, 0, 0, 0.95);
+  addHoldEvents(btnZoomOut, 0, 0, 1.05);
+}
+setupDPad();
+
+// Mouse wheel zoom
+canvas.addEventListener('wheel', (e) => {
+  e.preventDefault(); // Stop page from scrolling
+  if (!obj) return;
+  if (e.deltaY < 0) {
+    vp(0, 0, 0.9); // Zoom in
+  } else {
+    vp(0, 0, 1.1); // Zoom out
+  }
+});

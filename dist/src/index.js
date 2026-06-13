@@ -1,178 +1,101 @@
-//import { Input } from './Input.js';
 import { Obj3D } from './Obj3D.js';
-//import { Canvas3D } from './Canvas3D.js';
-//import { CvWireframe } from './CvWireFrame.js';
-//import { CvHLines } from './CvHLines.js';
 import { CvZbuf } from './CvZbuf.js';
-import { Rota3D } from './Rota3D.js';
 var canvas;
 var graphics;
 canvas = document.getElementById('circlechart');
 graphics = canvas.getContext('2d');
 var cv;
 var obj;
-var ang = 0;
 function leerArchivo(e) {
     var archivo = e.target.files[0];
     if (!archivo) {
         return;
     }
+    // Mostrar nombre del archivo
+    document.getElementById('file-name-display').innerText = archivo.name;
     var lector = new FileReader();
     lector.onload = function (e) {
         var contenido = e.target.result;
-        mostrarContenido(contenido);
+        // Mostrar en visor crudo
+        var rawTextEl = document.getElementById('raw-file-content');
+        if (rawTextEl)
+            rawTextEl.value = contenido;
         obj = new Obj3D();
         if (obj.read(contenido)) {
-            //sDir = sDir1;
             cv = new CvZbuf(graphics, canvas);
             cv.setObj(obj);
             cv.paint();
+            // Actualizar estadisticas de Vertices y Caras (Triangulos)
+            var verts = obj.w.length - 1; // El vertice 0 no se usa
+            var tris = obj.getPolyList().length;
+            document.getElementById('stat-verts').innerText = verts.toString();
+            document.getElementById('bottom-stat-verts').innerText = verts.toString();
+            document.getElementById('stat-tris').innerText = tris.toString();
+            document.getElementById('bottom-stat-tris').innerText = tris.toString();
+            // Init sliders values based on object defaults
+            updateLightingFromObj();
         }
     };
     lector.readAsText(archivo);
 }
-function mostrarContenido(contenido) {
-    var elemento = document.getElementById('contenido-archivo');
-    //
-    //readObject(new Input(contenido));
-    elemento.innerHTML = contenido;
-}
 function vp(dTheta, dPhi, fRho) {
     if (obj != undefined) {
-        var obj_1 = cv.getObj();
-        if (!obj_1.vp(cv, dTheta, dPhi, fRho))
-            alert('datos no validos');
+        var currentObj = cv.getObj();
+        if (!currentObj.vp(cv, dTheta, dPhi, fRho))
+            console.log('datos no validos o limites de zoom alcanzados');
     }
-    else
-        alert('aun no has leido un archivo');
 }
-function eyeDownFunc() {
-    vp(0, 0.1, 1);
-}
-function eyeUpFunc() {
-    vp(0, -0.1, 1);
-}
-function eyeLeftFunc() {
-    vp(-0.1, 0, 1);
-}
-function eyeRightFunc() {
-    vp(0.1, 0, 1);
-}
-function incrDistFunc() {
-    vp(0, 0, 2);
-}
-function decrDistFunc() {
-    vp(0, 0, 0.5);
-}
-function pza1TR() {
-    var tr = 0.1;
-    for (var i = 17; i <= 20; i++) {
-        obj.w[i].x = obj.w[i].x + tr;
-    }
-    cv.setObj(obj);
-    cv.paint();
-}
-function pza1DerFunc() {
-    var af = 10;
-    Rota3D.initRotate(obj.w[139], obj.w[140], af * Math.PI / 180);
-    for (var i = 201; i <= 238; i++) {
-        obj.w[i] = Rota3D.rotate(obj.w[i]);
-    }
-    cv.setObj(obj);
-    cv.paint();
-}
-function pza1IzqFunc() {
-    var af = -10;
-    Rota3D.initRotate(obj.w[139], obj.w[140], af * Math.PI / 180);
-    for (var i = 201; i <= 238; i++) {
-        obj.w[i] = Rota3D.rotate(obj.w[i]);
-    }
-    cv.setObj(obj);
-    cv.paint();
-}
-function pza12DerFunc() {
-    var af = 10;
-    Rota3D.initRotate(obj.w[29], obj.w[30], af * Math.PI / 180);
-    for (var i = 101; i <= 140; i++) {
-        obj.w[i] = Rota3D.rotate(obj.w[i]);
-    }
-    for (var i = 201; i <= 238; i++) {
-        obj.w[i] = Rota3D.rotate(obj.w[i]);
-    }
-    cv.setObj(obj);
-    cv.paint();
-}
-function pza12IzqFunc() {
-    var af = -10;
-    Rota3D.initRotate(obj.w[29], obj.w[30], af * Math.PI / 180);
-    for (var i = 101; i <= 140; i++) {
-        obj.w[i] = Rota3D.rotate(obj.w[i]);
-    }
-    for (var i = 201; i <= 238; i++) {
-        obj.w[i] = Rota3D.rotate(obj.w[i]);
-    }
-    cv.setObj(obj);
-    cv.paint();
-}
+// Eventos
 document.getElementById('file-input').addEventListener('change', leerArchivo, false);
-document.getElementById('eyeDown').addEventListener('click', eyeDownFunc, false);
-document.getElementById('eyeUp').addEventListener('click', eyeUpFunc, false);
-document.getElementById('eyeLeft').addEventListener('click', eyeLeftFunc, false);
-document.getElementById('eyeRight').addEventListener('click', eyeRightFunc, false);
-document.getElementById('incrDist').addEventListener('click', incrDistFunc, false);
-document.getElementById('decrDist').addEventListener('click', decrDistFunc, false);
-//movimiento de piezas
-document.getElementById('pza1Izq').addEventListener('click', pza1IzqFunc, false);
-document.getElementById('pza1Der').addEventListener('click', pza1DerFunc, false);
-document.getElementById('pza12Izq').addEventListener('click', pza12IzqFunc, false);
-document.getElementById('pza12Der').addEventListener('click', pza12DerFunc, false);
-document.getElementById('pzatr').addEventListener('click', pza1TR, false);
 var Pix, Piy;
 var Pfx, Pfy;
-var theta = 0.3, phi = 1.3, SensibilidadX = 0.02, SensibilidadY = 0.02;
 var flag = false;
+var autoRotating = false;
+var animationFrameId;
+function toggleAutoRotate() {
+    if (!obj) {
+        alert('Primero carga un modelo 3D.');
+        return;
+    }
+    autoRotating = !autoRotating;
+    var btn = document.getElementById('btn-auto-rotate');
+    if (autoRotating) {
+        btn.innerHTML = 'II Detener';
+        btn.classList.add('active-red');
+        rotateLoop();
+    }
+    else {
+        btn.innerHTML = '▶ Animar';
+        btn.classList.remove('active-red');
+        cancelAnimationFrame(animationFrameId);
+    }
+}
+function rotateLoop() {
+    if (!autoRotating)
+        return;
+    var speedVal = parseFloat(document.getElementById('input-velocidad').value) || 45;
+    // Convert 0-180 scale to a small rotation angle per frame
+    var dTheta = speedVal * 0.0005;
+    vp(dTheta, 0, 1);
+    animationFrameId = requestAnimationFrame(rotateLoop);
+}
+document.getElementById('btn-auto-rotate').addEventListener('click', toggleAutoRotate, false);
+// Manipulación 360 (Ratón)
 function handleMouse(evento) {
     Pix = evento.offsetX;
     Piy = evento.offsetY;
     flag = true;
 }
 function makeVizualization(evento) {
-    if (flag) {
+    if (flag && obj) {
         Pfx = evento.offsetX;
         Pfy = evento.offsetY;
-        //console.log(Pfx, Pfy)
-        var difX = Pix - Pfx;
+        var difX = Pfx - Pix;
         var difY = Pfy - Piy;
-        vp(0, 0.1 * difY / 50, 1);
-        Piy = Pfy;
-        vp(0.1 * difX, 0 / 50, 1);
+        // Mejor sensibilidad para 360 grados
+        vp(-difX * 0.01, difY * 0.01, 1);
         Pix = Pfx;
-        /*if( Piy>Pfy+1 ){
-          phi += SensibilidadY;
-          vp(0, 0.1*, 1);
-          //cv.redibuja(theta, phi, tamanoObjeto);
-          Piy=Pfy;
-        }
-    
-        if(Pfy>Piy+1){
-          phi -= SensibilidadY;
-          vp(0,-0.1, 1);
-          //cv.redibuja(theta, phi, tamanoObjeto);
-          Piy=Pfy;
-        }*/
-        /*if (Pix > Pfx + 1) {
-          theta += SensibilidadX;
-          vp(0.1, 0, 1);
-          //cv.redibuja(theta, phi, tamanoObjeto);
-          Pix = Pfx;
-        }
-            
-        if (Pfx > Pix + 1) {
-          theta -= SensibilidadX;
-          vp(-0.1, 0, 1);
-          //cv.redibuja(theta, phi, tamanoObjeto);
-          Pix = Pfx;
-        }*/
+        Piy = Pfy;
     }
 }
 function noDraw() {
@@ -181,3 +104,182 @@ function noDraw() {
 canvas.addEventListener('mousedown', handleMouse);
 canvas.addEventListener('mouseup', noDraw);
 canvas.addEventListener('mousemove', makeVizualization);
+canvas.addEventListener('mouseleave', noDraw);
+// Eventos de Sliders de UI
+function setupSliders() {
+    var inputs = ['velocidad', 'luzX', 'luzY', 'luzZ', 'eyeZ', 'fov'];
+    inputs.forEach(function (id) {
+        var el = document.getElementById("input-".concat(id));
+        var valEl = document.getElementById("val-".concat(id));
+        if (el && valEl) {
+            el.addEventListener('input', function (e) {
+                var val = e.target.value;
+                if (id === 'velocidad') {
+                    valEl.innerText = "".concat(val, ".0\u00B0/s");
+                    document.getElementById('bottom-stat-vel').innerText = "".concat(val, "\u00B0/s");
+                }
+                else if (id === 'eyeZ') {
+                    valEl.innerText = parseFloat(val).toFixed(1);
+                    if (obj) {
+                        // Map the generic slider (1 to 20) to actual eye distance based on obj's bounds
+                        // rhoMin is the closest distance. Default rho is 3 * rhoMin.
+                        obj.rho = obj.rhoMin * parseFloat(val);
+                        if (cv)
+                            cv.paint();
+                    }
+                }
+                else if (id === 'fov') {
+                    valEl.innerText = "".concat(val, "\u00B0");
+                    if (obj) {
+                        // Default FOV slider is 38. We map 38 to a multiplier of 1.0.
+                        obj.zoomMultiplier = 38.0 / parseFloat(val);
+                        if (cv)
+                            cv.paint();
+                    }
+                }
+                else {
+                    valEl.innerText = parseFloat(val).toFixed(2);
+                    updateLightingToObj();
+                }
+            });
+        }
+    });
+}
+setupSliders();
+function updateLightingFromObj() {
+    if (!obj)
+        return;
+    document.getElementById('input-luzX').value = obj.sunX.toFixed(2);
+    document.getElementById('val-luzX').innerText = obj.sunX.toFixed(2);
+    document.getElementById('input-luzY').value = obj.sunY.toFixed(2);
+    document.getElementById('val-luzY').innerText = obj.sunY.toFixed(2);
+    document.getElementById('input-luzZ').value = obj.sunZ.toFixed(2);
+    document.getElementById('val-luzZ').innerText = obj.sunZ.toFixed(2);
+    // Reset camera sliders to default when a new object is loaded
+    var eyeZInput = document.getElementById('input-eyeZ');
+    var eyeZVal = document.getElementById('val-eyeZ');
+    if (eyeZInput && eyeZVal) {
+        eyeZInput.value = '3.0';
+        eyeZVal.innerText = '3.0';
+        obj.rho = obj.rhoMin * 3.0;
+    }
+    var fovInput = document.getElementById('input-fov');
+    var fovVal = document.getElementById('val-fov');
+    if (fovInput && fovVal) {
+        fovInput.value = '38';
+        fovVal.innerText = '38°';
+        obj.zoomMultiplier = 1.0;
+    }
+}
+function updateLightingToObj() {
+    if (!obj)
+        return;
+    var lx = parseFloat(document.getElementById('input-luzX').value);
+    var ly = parseFloat(document.getElementById('input-luzY').value);
+    var lz = parseFloat(document.getElementById('input-luzZ').value);
+    // Normalize vector
+    var len = Math.sqrt(lx * lx + ly * ly + lz * lz);
+    if (len === 0) {
+        lx = 0;
+        ly = 1;
+        lz = 0;
+        len = 1;
+    }
+    obj.sunX = lx / len;
+    obj.sunY = ly / len;
+    obj.sunZ = lz / len;
+    if (cv)
+        cv.paint();
+}
+// Resize handling básico
+function resizeCanvas() {
+    var container = document.getElementById('canvas-container');
+    if (container) {
+        canvas.width = container.clientWidth;
+        canvas.height = container.clientHeight;
+        if (obj && cv) {
+            cv.paint();
+        }
+    }
+}
+// Setup color palette swatches
+function setupColorSwatches() {
+    var swatches = document.querySelectorAll('.color-swatch');
+    swatches.forEach(function (swatch) {
+        swatch.addEventListener('click', function (e) {
+            swatches.forEach(function (s) { return s.classList.remove('active'); });
+            var target = e.target;
+            target.classList.add('active');
+            var bg = window.getComputedStyle(target).backgroundColor;
+            var match = bg.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/);
+            if (match && obj) {
+                obj.baseColorR = parseInt(match[1]);
+                obj.baseColorG = parseInt(match[2]);
+                obj.baseColorB = parseInt(match[3]);
+                if (cv)
+                    cv.paint();
+            }
+        });
+    });
+}
+setupColorSwatches();
+window.addEventListener('resize', resizeCanvas);
+setTimeout(resizeCanvas, 100);
+// D-Pad Rotation Handling
+var manualRotationInterval;
+function startManualRotation(dTheta, dPhi, fRho) {
+    if (fRho === void 0) { fRho = 1; }
+    if (!obj)
+        return;
+    // Rotate/zoom once immediately
+    vp(dTheta, dPhi, fRho);
+    // Then start interval for continuous action
+    clearInterval(manualRotationInterval);
+    manualRotationInterval = window.setInterval(function () {
+        vp(dTheta, dPhi, fRho);
+    }, 30); // 30ms for smooth ~30fps
+}
+function stopManualRotation() {
+    clearInterval(manualRotationInterval);
+}
+function setupDPad() {
+    var btnUp = document.getElementById('btn-rot-up');
+    var btnDown = document.getElementById('btn-rot-down');
+    var btnLeft = document.getElementById('btn-rot-left');
+    var btnRight = document.getElementById('btn-rot-right');
+    var btnZoomIn = document.getElementById('btn-zoom-in');
+    var btnZoomOut = document.getElementById('btn-zoom-out');
+    var addHoldEvents = function (btn, dTheta, dPhi, fRho) {
+        if (fRho === void 0) { fRho = 1; }
+        if (!btn)
+            return;
+        btn.addEventListener('mousedown', function () { return startManualRotation(dTheta, dPhi, fRho); });
+        btn.addEventListener('mouseup', stopManualRotation);
+        btn.addEventListener('mouseleave', stopManualRotation);
+        // Touch support for mobile
+        btn.addEventListener('touchstart', function (e) { e.preventDefault(); startManualRotation(dTheta, dPhi, fRho); });
+        btn.addEventListener('touchend', function (e) { e.preventDefault(); stopManualRotation(); });
+        btn.addEventListener('touchcancel', function (e) { e.preventDefault(); stopManualRotation(); });
+    };
+    var rotSpeed = 0.05; // Base rotation speed for D-pad
+    addHoldEvents(btnUp, 0, rotSpeed);
+    addHoldEvents(btnDown, 0, -rotSpeed);
+    addHoldEvents(btnLeft, -rotSpeed, 0);
+    addHoldEvents(btnRight, rotSpeed, 0);
+    // Zoom functionality for buttons (continuous)
+    addHoldEvents(btnZoomIn, 0, 0, 0.95);
+    addHoldEvents(btnZoomOut, 0, 0, 1.05);
+}
+setupDPad();
+// Mouse wheel zoom
+canvas.addEventListener('wheel', function (e) {
+    e.preventDefault(); // Stop page from scrolling
+    if (!obj)
+        return;
+    if (e.deltaY < 0) {
+        vp(0, 0, 0.9); // Zoom in
+    }
+    else {
+        vp(0, 0, 1.1); // Zoom out
+    }
+});

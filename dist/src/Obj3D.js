@@ -14,11 +14,15 @@ var Obj3D = /** @class */ (function () {
         this.sunX = -this.sunZ;
         this.inprodMin = 1e30;
         this.inprodMax = -1e30;
+        this.baseColorR = 200;
+        this.baseColorG = 200;
+        this.baseColorB = 200;
         this.w = new Array(); // World coordinates
         this.polyList = new Array(); // Polygon3D objects 
         this.file = " ";
         this.indices = [];
         this.tind = 0; // File name
+        this.zoomMultiplier = 1.0;
     }
     Obj3D.prototype.read = function (file) {
         var inp = new Input(file);
@@ -181,7 +185,7 @@ var Obj3D = /** @class */ (function () {
             }
         }
         var rangeX = xScrMax - xScrMin, rangeY = yScrMax - yScrMin;
-        this.d = 0.95 * Math.min(dim.width / rangeX, dim.height / rangeY);
+        this.d = this.zoomMultiplier * 0.95 * Math.min(dim.width / rangeX, dim.height / rangeY);
         this.imgCenter = new Point2D(this.d * (xScrMin + xScrMax) / 2, this.d * (yScrMin + yScrMax) / 2);
         for (var i = 1; i < n; i++) {
             if (this.vScr[i] != null) {
@@ -194,6 +198,10 @@ var Obj3D = /** @class */ (function () {
     };
     Obj3D.prototype.planeCoeff = function () {
         var nFaces = this.polyList.length;
+        var nVerts = this.w.length;
+        this.vNormals = new Array(nVerts);
+        for (var i = 0; i < nVerts; i++)
+            this.vNormals[i] = new Point3D(0, 0, 0);
         for (var j = 0; j < nFaces; j++) {
             var pol = this.polyList[j];
             var nrs = pol.getNrs();
@@ -209,6 +217,15 @@ var Obj3D = /** @class */ (function () {
             c /= len;
             h = a * A.x + b * A.y + c * A.z;
             pol.setAbch(a, b, c, h);
+            // Accumulate vertex normals
+            for (var i = 0; i < nrs.length; i++) {
+                var idx = Math.abs(nrs[i]);
+                if (this.vNormals[idx]) {
+                    this.vNormals[idx].x += a;
+                    this.vNormals[idx].y += b;
+                    this.vNormals[idx].z += c;
+                }
+            }
             var A1 = this.vScr[iA], B1 = this.vScr[iB], C1 = this.vScr[iC];
             u1 = B1.x - A1.x;
             u2 = B1.y - A1.y;
@@ -221,6 +238,18 @@ var Obj3D = /** @class */ (function () {
                 this.inprodMin = inprod;
             if (inprod > this.inprodMax)
                 this.inprodMax = inprod;
+        }
+        // Normalize vertex normals
+        for (var i = 1; i < nVerts; i++) {
+            var n = this.vNormals[i];
+            if (n) {
+                var l = Math.sqrt(n.x * n.x + n.y * n.y + n.z * n.z);
+                if (l > 0) {
+                    n.x /= l;
+                    n.y /= l;
+                    n.z /= l;
+                }
+            }
         }
         this.inprodRange = this.inprodMax - this.inprodMin;
     };
@@ -237,6 +266,8 @@ var Obj3D = /** @class */ (function () {
     };
     Obj3D.prototype.colorCode = function (a, b, c) {
         var inprod = a * this.sunX + b * this.sunY + c * this.sunZ;
+        if (this.inprodRange === 0)
+            return 255;
         return Math.round(((inprod - this.inprodMin) / this.inprodRange) * 255);
     };
     return Obj3D;

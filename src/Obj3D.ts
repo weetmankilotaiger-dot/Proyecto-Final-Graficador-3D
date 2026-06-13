@@ -6,7 +6,6 @@ import { Point3D } from './point3D.js';
 import { Input } from './Input.js';
 import { Polygon3D } from './Polygon3D.js';
 import { Dimension } from './Dimension.js';
-import { CvHLines } from './CvHLines';
 import { CvZbuf } from './CvZbuf.js';
 
 export class Obj3D{
@@ -15,8 +14,9 @@ export class Obj3D{
    v11: number; v12: number; v13: number; v21: number; v22: number; v23: number; v32: number;
    v33: number; v43: number; xe: number; ye: number; ze: number; objSize: number;
    private imgCenter: Point2D;
-   private sunZ: number = 1 / Math.sqrt(3); sunY: number = this.sunZ; sunX: number = -this.sunZ;
+   public sunZ: number = 1 / Math.sqrt(3); public sunY: number = this.sunZ; public sunX: number = -this.sunZ;
    inprodMin: number = 1e30; inprodMax: number = -1e30; inprodRange: number;
+   public baseColorR: number = 200; public baseColorG: number = 200; public baseColorB: number = 200;
    public w:any[] = new Array();         // World coordinates
    private e:Array<Point3D>;                     // Eye coordinates
    private vScr: Array<Point2D>;//Point2D[];                  // Screen coordinates
@@ -142,6 +142,8 @@ export class Obj3D{
                                                        this.v43 = -this.rho;
    }
 
+   public zoomMultiplier: number = 1.0;
+
    eyeAndScreen(dim: Dimension ): number{// Called in paint method of Canvas class
       this.initPersp();
       let n = this.w.length;
@@ -168,7 +170,7 @@ export class Obj3D{
          }
       }
       let rangeX = xScrMax - xScrMin, rangeY = yScrMax - yScrMin;
-      this.d = 0.95 * Math.min(dim.width/rangeX, dim.height/rangeY);
+      this.d = this.zoomMultiplier * 0.95 * Math.min(dim.width/rangeX, dim.height/rangeY);
       this.imgCenter = new Point2D(this.d * (xScrMin + xScrMax)/2,
                               this.d * (yScrMin + yScrMax)/2);
       for (let i = 1; i < n; i++) {
@@ -178,8 +180,13 @@ export class Obj3D{
       // Maximum screen-coordinate range used in CvHLines for HP-GL
    }
 
+   public vNormals: Array<Point3D>;
+
    planeCoeff(): void {
       let nFaces = this.polyList.length;
+      let nVerts = this.w.length;
+      this.vNormals = new Array(nVerts);
+      for(let i=0; i<nVerts; i++) this.vNormals[i] = new Point3D(0,0,0);
 
       for (let j = 0; j < nFaces; j++){
          let pol: Polygon3D  = this.polyList[j];
@@ -199,18 +206,40 @@ export class Obj3D{
             a /= len; b /= len; c /= len;
             h = a * A.x + b * A.y + c * A.z;
          pol.setAbch(a, b, c, h);
+         
+         // Accumulate vertex normals
+         for (let i = 0; i < nrs.length; i++) {
+             let idx = Math.abs(nrs[i]);
+             if (this.vNormals[idx]) {
+                this.vNormals[idx].x += a;
+                this.vNormals[idx].y += b;
+                this.vNormals[idx].z += c;
+             }
+         }
+         
          let A1: Point2D  = this.vScr[iA], B1 = this.vScr[iB], C1 = this.vScr[iC];
          u1 = B1.x - A1.x; u2 = B1.y - A1.y;
          v1 = C1.x - A1.x; v2 = C1.y - A1.y;
          if (u1 * v2 - u2 * v1 <= 0) continue; // backface
+         
          let inprod: number = a * this.sunX + b * this.sunY + c * this.sunZ;
          if (inprod < this.inprodMin) this.inprodMin = inprod; 
          if (inprod > this.inprodMax) this.inprodMax = inprod;
       }
+      
+      // Normalize vertex normals
+      for(let i=1; i<nVerts; i++) {
+         let n = this.vNormals[i];
+         if(n) {
+            let l = Math.sqrt(n.x*n.x + n.y*n.y + n.z*n.z);
+            if(l > 0) { n.x /= l; n.y /= l; n.z /= l; }
+         }
+      }
+      
       this.inprodRange = this.inprodMax - this.inprodMin;
    }
 
-   vp( cv: CvHLines|CvZbuf, dTheta:number, dPhi:number, fRho:number): boolean {
+   vp( cv: CvZbuf, dTheta:number, dPhi:number, fRho:number): boolean {
       this.theta += dTheta;
       this.phi += dPhi;
       let rhoNew = fRho * this.rho;
@@ -224,6 +253,7 @@ export class Obj3D{
 
    colorCode(a: number, b: number, c: number): number{
       let inprod = a * this.sunX + b * this.sunY + c * this.sunZ;
+      if (this.inprodRange === 0) return 255;
       return Math.round(
           ((inprod - this.inprodMin)/this.inprodRange) * 255);
    }
