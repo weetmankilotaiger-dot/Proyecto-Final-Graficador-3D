@@ -51,10 +51,10 @@ function leerArchivo(e:any) {
 }
 
 function vp(dTheta:number, dPhi:number, fRho:number):void{  // Viewpoint
-  if (obj != undefined) {
-    let currentObj: Obj3D = cv.getObj();
-    if (!currentObj.vp(cv, dTheta, dPhi, fRho))
-      console.log('datos no validos o limites de zoom alcanzados');
+  if (cv && cv.getObjs().length > 0) {
+    cv.getObjs().forEach(o => {
+      o.vp(cv, dTheta, dPhi, fRho);
+    });
   }
 }
 
@@ -131,7 +131,7 @@ canvas.addEventListener('mouseleave', noDraw);
 
 // Eventos de Sliders de UI
 function setupSliders() {
-  const inputs = ['velocidad', 'luzX', 'luzY', 'luzZ', 'eyeZ', 'fov'];
+  const inputs = ['velocidad', 'luzX', 'luzY', 'luzZ', 'eyeZ', 'fov', 'apertura'];
   inputs.forEach(id => {
     const el = document.getElementById(`input-${id}`);
     const valEl = document.getElementById(`val-${id}`);
@@ -155,6 +155,14 @@ function setupSliders() {
             // Default FOV slider is 38. We map 38 to a multiplier of 1.0.
             obj.zoomMultiplier = 38.0 / parseFloat(val);
             if (cv) cv.paint();
+          }
+        } else if (id === 'apertura') {
+          valEl.innerText = `${val}°`;
+          if (cv && cv.getObjs().length > 1) {
+            // La pieza móvil es el índice 1
+            let movil = cv.getObjs()[1];
+            movil.localRotZ = -(parseFloat(val) * Math.PI) / 180.0;
+            cv.paint();
           }
         } else {
           valEl.innerText = parseFloat(val).toFixed(2);
@@ -195,21 +203,21 @@ function updateLightingFromObj() {
   }
 }
 
+// Actualizar iluminación en el objeto
 function updateLightingToObj() {
   if (!obj) return;
-  let lx = parseFloat((<HTMLInputElement>document.getElementById('input-luzX')).value);
-  let ly = parseFloat((<HTMLInputElement>document.getElementById('input-luzY')).value);
-  let lz = parseFloat((<HTMLInputElement>document.getElementById('input-luzZ')).value);
+  const lx = parseFloat((<HTMLInputElement>document.getElementById('input-luzX')).value);
+  const ly = parseFloat((<HTMLInputElement>document.getElementById('input-luzY')).value);
+  const lz = parseFloat((<HTMLInputElement>document.getElementById('input-luzZ')).value);
   
-  // Normalize vector
-  let len = Math.sqrt(lx*lx + ly*ly + lz*lz);
-  if (len === 0) { lx = 0; ly = 1; lz = 0; len = 1; }
-  
-  obj.sunX = lx / len;
-  obj.sunY = ly / len;
-  obj.sunZ = lz / len;
-  
-  if (cv) cv.paint();
+  if (cv && cv.getObjs().length > 0) {
+    cv.getObjs().forEach(o => {
+      o.sunX = lx;
+      o.sunY = ly;
+      o.sunZ = lz;
+    });
+    cv.paint();
+  }
 }
 
 // Resize handling básico
@@ -308,6 +316,60 @@ canvas.addEventListener('wheel', (e) => {
     vp(0, 0, 1.1); // Zoom out
   }
 });
+
+const btnLoadPinza = document.getElementById('btn-load-pinza');
+if (btnLoadPinza) {
+  btnLoadPinza.addEventListener('click', () => {
+    // Stop auto rotation if it was running
+    if (autoRotating) toggleAutoRotate();
+    
+    cv.clearObjs();
+    
+    Promise.all([
+      fetch('pinza_base.txt').then(r => r.text()),
+      fetch('pinza_movil.txt').then(r => r.text())
+    ]).then(([baseData, movilData]) => {
+      let baseObj = new Obj3D();
+      if (baseObj.read(baseData)) {
+        baseObj.baseColorR = 100;
+        baseObj.baseColorG = 150;
+        baseObj.baseColorB = 200;
+        cv.addObj(baseObj);
+      }
+      
+      let movilObj = new Obj3D();
+      if (movilObj.read(movilData)) {
+        movilObj.baseColorR = 200;
+        movilObj.baseColorG = 100;
+        movilObj.baseColorB = 100;
+        
+        // Asignamos el pivote de la pieza movil
+        movilObj.pivotX = 0;
+        movilObj.pivotY = -0.5;
+        movilObj.pivotZ = 0.2;
+        
+        cv.addObj(movilObj);
+      }
+      
+      // We set 'obj' to baseObj so global UI logic (like lighting) still binds to it.
+      // But both objects share the camera perspective implicitly since they are drawn in the same context.
+      // Wait, updateLightingToObj() only updates 'obj'. We need to make sure ALL objects get the light!
+      obj = baseObj;
+      updateLightingToObj();
+      cv.getObjs().forEach(o => {
+        o.sunX = obj.sunX;
+        o.sunY = obj.sunY;
+        o.sunZ = obj.sunZ;
+        o.ambientLight = obj.ambientLight;
+      });
+      
+      document.getElementById('file-name-display').innerText = "Pinza Articulada";
+      document.getElementById('raw-file-content').value = "Multi-part object loaded.\n- pinza_base.txt\n- pinza_movil.txt";
+      
+      cv.paint();
+    }).catch(err => console.error('Error loading pinzas:', err));
+  });
+}
 
 // Cargar modelo por defecto al iniciar
 window.addEventListener('load', () => {

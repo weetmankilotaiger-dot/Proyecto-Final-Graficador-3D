@@ -22,6 +22,16 @@ var Obj3D = /** @class */ (function () {
         this.file = " ";
         this.indices = [];
         this.tind = 0; // File name
+        this.targetX = 0;
+        this.targetY = 0;
+        this.targetZ = 0;
+        // Local Transformation (for articulated parts)
+        this.pivotX = 0;
+        this.pivotY = 0;
+        this.pivotZ = 0;
+        this.localRotX = 0;
+        this.localRotY = 0;
+        this.localRotZ = 0;
         this.zoomMultiplier = 1.0;
     }
     Obj3D.prototype.read = function (file) {
@@ -168,9 +178,25 @@ var Obj3D = /** @class */ (function () {
                 this.vScr[i] = null;
             }
             else {
-                var x = this.v11 * P.x + this.v21 * P.y;
-                var y = this.v12 * P.x + this.v22 * P.y + this.v32 * P.z;
-                var z = this.v13 * P.x + this.v23 * P.y + this.v33 * P.z + this.v43;
+                var px = P.x;
+                var py = P.y;
+                var pz = P.z;
+                // Apply Local Rotation around Pivot (Z-axis primary for pliers)
+                if (this.localRotZ !== 0) {
+                    var dx = px - this.pivotX;
+                    var dy = py - this.pivotY;
+                    var cosZ = Math.cos(this.localRotZ);
+                    var sinZ = Math.sin(this.localRotZ);
+                    px = this.pivotX + dx * cosZ - dy * sinZ;
+                    py = this.pivotY + dx * sinZ + dy * cosZ;
+                }
+                // Apply Target offset
+                px -= this.targetX;
+                py -= this.targetY;
+                pz -= this.targetZ;
+                var x = this.v11 * px + this.v21 * py;
+                var y = this.v12 * px + this.v22 * py + this.v32 * pz;
+                var z = this.v13 * px + this.v23 * py + this.v33 * pz + this.v43;
                 var Pe = this.e[i] = new Point3D(x, y, z);
                 var xScr = -Pe.x / Pe.z, yScr = -Pe.y / Pe.z;
                 this.vScr[i] = new Point2D(xScr, yScr);

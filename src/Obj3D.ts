@@ -130,6 +130,17 @@ export class Obj3D{
       this.rhoMax = 1000 * this.rhoMin;
       this.rho = 3 * this.rhoMin;
    }
+   public targetX: number = 0;
+   public targetY: number = 0;
+   public targetZ: number = 0;
+
+   // Local Transformation (for articulated parts)
+   public pivotX: number = 0;
+   public pivotY: number = 0;
+   public pivotZ: number = 0;
+   public localRotX: number = 0;
+   public localRotY: number = 0;
+   public localRotZ: number = 0;
 
    initPersp(): void {
       let costh = Math.cos(this.theta);
@@ -157,9 +168,28 @@ export class Obj3D{
             this.e[i] = undefined; this.vScr[i] = null;
          }
          else {
-            let x = this.v11 * P.x + this.v21 * P.y;
-            let y = this.v12 * P.x + this.v22 * P.y + this.v32 * P.z;
-            let z = this.v13 * P.x + this.v23 * P.y + this.v33 * P.z + this.v43;
+            let px = P.x;
+            let py = P.y;
+            let pz = P.z;
+
+            // Apply Local Rotation around Pivot (Z-axis primary for pliers)
+            if (this.localRotZ !== 0) {
+               let dx = px - this.pivotX;
+               let dy = py - this.pivotY;
+               let cosZ = Math.cos(this.localRotZ);
+               let sinZ = Math.sin(this.localRotZ);
+               px = this.pivotX + dx * cosZ - dy * sinZ;
+               py = this.pivotY + dx * sinZ + dy * cosZ;
+            }
+
+            // Apply Target offset
+            px -= this.targetX;
+            py -= this.targetY;
+            pz -= this.targetZ;
+
+            let x = this.v11 * px + this.v21 * py;
+            let y = this.v12 * px + this.v22 * py + this.v32 * pz;
+            let z = this.v13 * px + this.v23 * py + this.v33 * pz + this.v43;
             let Pe:Point3D = this.e[i] = new Point3D(x, y, z);
             let xScr = -Pe.x/Pe.z, yScr = -Pe.y/Pe.z;
             this.vScr[i] = new Point2D(xScr, yScr);

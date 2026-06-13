@@ -399,6 +399,7 @@
           </label>
           <input type="file" id="file-input" accept=".txt,.dat,.obj" style="display: none;" />
         </div>
+        <button id="btn-load-pinza" class="btn-outline" style="margin-top: 10px;">🛠️ Cargar Pinza Articulada</button>
         <div class="file-name" id="file-name-display">&lt; NO LOADED DATA &gt;</div>
       </div>
 
@@ -429,7 +430,7 @@
       <!-- Código Crudo -->
       <div class="glass-panel" style="display: flex; flex-direction: column; flex-grow: 1; padding: 15px; max-height: 250px;">
         <h4 style="margin: 0 0 10px 0; font-size: 0.75rem; color: var(--neon-cyan); letter-spacing: 1px; border-bottom: 1px solid rgba(0,240,255,0.2); padding-bottom: 5px;">RAW FILE DATA</h4>
-        <textarea id="raw-file-content" readonly style="flex-grow: 1; width: 100%; box-sizing: border-box; background: rgba(0,0,0,0.6); border: 1px solid var(--glass-border); color: #0aff50; font-family: 'Courier New', Courier, monospace; font-size: 0.7rem; padding: 8px; border-radius: 4px; resize: none;"></textarea>
+        <textarea id="raw-file-content" readonly style="flex-grow: 1; width: 100%; box-sizing: border-box; background: rgba(0,0,0,0.6); border: 1px solid var(--glass-border); color: #0AC8B9; font-family: 'Courier New', Courier, monospace; font-size: 0.7rem; padding: 8px; border-radius: 4px; resize: none;"></textarea>
       </div>
     </div>
 
@@ -454,6 +455,11 @@
           <label style="flex:1">Velocidad</label>
           <input type="range" id="input-velocidad" min="0" max="180" value="45" step="1">
           <span class="val" id="val-velocidad">45°/s</span>
+        </div>
+        <div class="control-row">
+          <label style="flex:1">Apertura</label>
+          <input type="range" id="input-apertura" min="0" max="30" value="0" step="1">
+          <span class="val" id="val-apertura">0°</span>
         </div>
       </div>
 
