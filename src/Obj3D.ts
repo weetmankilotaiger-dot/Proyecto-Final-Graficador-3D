@@ -141,6 +141,11 @@ export class Obj3D{
    public localRotX: number = 0;
    public localRotY: number = 0;
    public localRotZ: number = 0;
+   // Arbitrary axis rotation (Rodrigues)
+   public localRotAngle: number = 0;  // Radians
+   public localRotAxisX: number = 0;
+   public localRotAxisY: number = 0;
+   public localRotAxisZ: number = 1;  // Default: Z axis
 
    initPersp(): void {
       let costh = Math.cos(this.theta);
@@ -172,8 +177,26 @@ export class Obj3D{
             let py = P.y;
             let pz = P.z;
 
-            // Apply Local Rotation around Pivot (Z-axis primary for pliers)
-            if (this.localRotZ !== 0) {
+            // Apply Local Rotation around Pivot using arbitrary axis (Rodrigues' formula)
+            if (this.localRotAngle !== 0) {
+               let dx = px - this.pivotX;
+               let dy = py - this.pivotY;
+               let dz = pz - this.pivotZ;
+               let ax = this.localRotAxisX, ay = this.localRotAxisY, az = this.localRotAxisZ;
+               let cosA = Math.cos(this.localRotAngle);
+               let sinA = Math.sin(this.localRotAngle);
+               let dot = dx * ax + dy * ay + dz * az;
+               // cross = axis x d
+               let cx = ay * dz - az * dy;
+               let cy = az * dx - ax * dz;
+               let cz = ax * dy - ay * dx;
+               // Rodrigues: v_rot = v*cos + (k x v)*sin + k*(k.v)*(1-cos)
+               px = this.pivotX + dx * cosA + cx * sinA + ax * dot * (1 - cosA);
+               py = this.pivotY + dy * cosA + cy * sinA + ay * dot * (1 - cosA);
+               pz = this.pivotZ + dz * cosA + cz * sinA + az * dot * (1 - cosA);
+            }
+            // Fallback: simple Z-axis rotation (backward compatibility)
+            else if (this.localRotZ !== 0) {
                let dx = px - this.pivotX;
                let dy = py - this.pivotY;
                let cosZ = Math.cos(this.localRotZ);
