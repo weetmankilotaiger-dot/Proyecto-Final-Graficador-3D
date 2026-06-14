@@ -370,9 +370,11 @@ window.addEventListener('load', () => {
             objs[i].localRotAxisX = -Math.sin(petalAngle);
             objs[i].localRotAxisY = Math.cos(petalAngle);
             objs[i].localRotAxisZ = 0;
-            // Pivot en el centro de la flor (origen tras shiftToOrigin)
-            objs[i].pivotX = 0;
-            objs[i].pivotY = 0;
+            // Pivot en la BASE del pétalo (radio 0.55), no en el centro absoluto
+            // Así el pétalo se dobla desde su nacimiento sin despegarse del domo
+            let distBase = 0.55;
+            objs[i].pivotX = distBase * Math.cos(petalAngle);
+            objs[i].pivotY = distBase * Math.sin(petalAngle);
             objs[i].pivotZ = 0;
         }
         updateLightingFromObj();
