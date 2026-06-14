@@ -80,21 +80,26 @@ function rotateLoop() {
     animationFrameId = requestAnimationFrame(rotateLoop);
 }
 document.getElementById('btn-auto-rotate').addEventListener('click', toggleAutoRotate, false);
+// Estado de los pétalos
+let petalsOpen = false;
+let petalTargetAngle = 0; // Ángulo objetivo
+let petalCurrentAngle = 0; // Ángulo actual (para animación suave)
+let breezeTime = 0; // Tiempo para animación de brisa
 // Manipulación 360 (Ratón)
 function handleMouse(evento) {
     Pix = evento.offsetX;
     Piy = evento.offsetY;
     flag = true;
-    // Al hacer click, cerrar la pinza
+    // Al hacer click, alternar pétalos abiertos/cerrados
     if (cv && cv.getObjs().length > 1) {
-        let movil = cv.getObjs()[1];
-        movil.localRotZ = -(25 * Math.PI) / 180.0;
+        petalsOpen = !petalsOpen;
+        // Abierto: 10 grados. Cerrado como capullo: 85 grados.
+        petalTargetAngle = petalsOpen ? 10 : 85;
         const apSlider = document.getElementById('input-apertura');
         if (apSlider) {
-            apSlider.value = '25';
-            document.getElementById('val-apertura').innerText = '25°';
+            apSlider.value = petalTargetAngle.toString();
+            document.getElementById('val-apertura').innerText = petalTargetAngle + '°';
         }
-        cv.paint();
     }
 }
 function makeVizualization(evento) {
@@ -111,17 +116,6 @@ function makeVizualization(evento) {
 }
 function noDraw() {
     flag = false;
-    // Al soltar el click, abrir la pinza
-    if (cv && cv.getObjs().length > 1) {
-        let movil = cv.getObjs()[1];
-        movil.localRotZ = 0;
-        const apSlider = document.getElementById('input-apertura');
-        if (apSlider) {
-            apSlider.value = '0';
-            document.getElementById('val-apertura').innerText = '0°';
-        }
-        cv.paint();
-    }
 }
 canvas.addEventListener('mousedown', handleMouse);
 canvas.addEventListener('mouseup', noDraw);
@@ -162,9 +156,7 @@ function setupSliders() {
                 else if (id === 'apertura') {
                     valEl.innerText = `${val}°`;
                     if (cv && cv.getObjs().length > 1) {
-                        let movil = cv.getObjs()[1];
-                        movil.localRotZ = -(parseFloat(val) * Math.PI) / 180.0;
-                        cv.paint();
+                        petalTargetAngle = parseFloat(val);
                     }
                 }
                 else {
@@ -307,55 +299,109 @@ canvas.addEventListener('wheel', (e) => {
         vp(0, 0, 1.1); // Zoom out
     }
 });
-// Cargar pinza por defecto al iniciar
+// Cargar flor por defecto al iniciar
 window.addEventListener('load', () => {
     cv = new CvZbuf(graphics, canvas);
-    Promise.all([
-        fetch('pinza_base.txt').then(r => r.text()),
-        fetch('pinza_movil.txt').then(r => r.text())
-    ]).then(([baseData, movilData]) => {
-        let baseObj = new Obj3D();
-        if (baseObj.read(baseData)) {
-            baseObj.baseColorR = 190;
-            baseObj.baseColorG = 190;
-            baseObj.baseColorB = 195;
-            cv.addObj(baseObj);
-        }
-        let movilObj = new Obj3D();
-        if (movilObj.read(movilData)) {
-            movilObj.baseColorR = 190;
-            movilObj.baseColorG = 190;
-            movilObj.baseColorB = 195;
-            movilObj.pivotX = 0;
-            movilObj.pivotY = 0;
-            movilObj.pivotZ = 0;
-            cv.addObj(movilObj);
-        }
-        obj = baseObj;
-        updateLightingToObj();
-        cv.getObjs().forEach(o => {
-            o.sunX = obj.sunX;
-            o.sunY = obj.sunY;
-            o.sunZ = obj.sunZ;
+    const NUM_PETALS = 6;
+    const flowerFiles = ['flor_centro.txt'];
+    for (let i = 0; i < NUM_PETALS; i++) {
+        flowerFiles.push(`flor_petalo_${i}.txt`);
+    }
+    Promise.all(flowerFiles.map(f => fetch(f).then(r => r.text())))
+        .then((dataArr) => {
+        // Colores para cada parte
+        const petalColors = [
+            { r: 255, g: 80, b: 120 }, // Rosa fuerte
+            { r: 255, g: 120, b: 80 }, // Coral
+            { r: 255, g: 60, b: 100 }, // Rosa intenso
+            { r: 255, g: 140, b: 90 }, // Salmon
+            { r: 255, g: 70, b: 110 }, // Rosa medio
+            { r: 255, g: 100, b: 70 }, // Naranja rosado
+        ];
+        let totalVerts = 0;
+        let totalTris = 0;
+        dataArr.forEach((data, idx) => {
+            let partObj = new Obj3D();
+            if (partObj.read(data)) {
+                if (idx === 0) {
+                    // Centro + tallo: verde oscuro
+                    partObj.baseColorR = 50;
+                    partObj.baseColorG = 160;
+                    partObj.baseColorB = 50;
+                }
+                else {
+                    // Pétalos: colores vibrantes
+                    let c = petalColors[(idx - 1) % petalColors.length];
+                    partObj.baseColorR = c.r;
+                    partObj.baseColorG = c.g;
+                    partObj.baseColorB = c.b;
+                }
+                cv.addObj(partObj);
+                totalVerts += partObj.w.length - 1;
+                totalTris += partObj.getPolyList().length;
+            }
         });
-        const verts = baseObj.w.length + movilObj.w.length - 2;
-        const tris = baseObj.getPolyList().length + movilObj.getPolyList().length;
+        obj = cv.getObjs()[0];
+        // Sincronizar iluminación
+        cv.getObjs().forEach(o => {
+            o.sunX = 1.0;
+            o.sunY = 2.0;
+            o.sunZ = 1.5;
+        });
         let statVerts = document.getElementById('stat-verts');
         if (statVerts)
-            statVerts.innerText = verts.toString();
+            statVerts.innerText = totalVerts.toString();
         let statTris = document.getElementById('stat-tris');
         if (statTris)
-            statTris.innerText = tris.toString();
+            statTris.innerText = totalTris.toString();
         let fileNameDisplay = document.getElementById('file-name-display');
         if (fileNameDisplay)
-            fileNameDisplay.innerText = 'Pinza Articulada';
+            fileNameDisplay.innerText = 'Flor Articulada (6 petalos)';
         const rawTextEl = document.getElementById('raw-file-content');
         if (rawTextEl)
-            rawTextEl.value = "Multi-part object loaded.\n- pinza_base.txt\n- pinza_movil.txt";
+            rawTextEl.value = flowerFiles.join('\n');
+        // Configurar ejes de rotación para cada pétalo
+        // Cada pétalo rota alrededor de un eje PERPENDICULAR a su dirección radial (en el plano XY)
+        const objs = cv.getObjs();
+        const NUM_PETALS = 6;
+        for (let i = 1; i <= NUM_PETALS; i++) {
+            let petalAngle = (i - 1) * (2 * Math.PI / NUM_PETALS);
+            // El eje de rotación es perpendicular al radio del pétalo, en el plano XY
+            objs[i].localRotAxisX = -Math.sin(petalAngle);
+            objs[i].localRotAxisY = Math.cos(petalAngle);
+            objs[i].localRotAxisZ = 0;
+            // Pivot en el centro de la flor (origen tras shiftToOrigin)
+            objs[i].pivotX = 0;
+            objs[i].pivotY = 0;
+            objs[i].pivotZ = 0;
+        }
         updateLightingFromObj();
         cv.paint();
         if (!autoRotating) {
             toggleAutoRotate();
         }
-    }).catch(err => console.error('Error loading default model:', err));
+        // Animación continua: brisa + apertura suave de pétalos
+        function animateFlower() {
+            breezeTime += 0.03;
+            const objs = cv.getObjs();
+            // Interpolar suavemente hacia el ángulo objetivo
+            let diff = petalTargetAngle - petalCurrentAngle;
+            petalCurrentAngle += diff * 0.08; // Easing suave
+            // Aplicar a cada pétalo (objetos 1 a 6)
+            for (let i = 1; i < objs.length; i++) {
+                let petalIdx = i - 1;
+                // Ángulo base de apertura (positivo = abrir hacia arriba)
+                let openAngle = (petalCurrentAngle * Math.PI) / 180.0;
+                // Brisa: oscilación suave con desfase por pétalo
+                let breeze = Math.sin(breezeTime + petalIdx * 1.05) * 0.03;
+                let breeze2 = Math.sin(breezeTime * 0.7 + petalIdx * 0.8) * 0.015;
+                objs[i].localRotAngle = openAngle + breeze + breeze2;
+            }
+            if (!autoRotating) {
+                cv.paint();
+            }
+            requestAnimationFrame(animateFlower);
+        }
+        animateFlower();
+    }).catch(err => console.error('Error loading flower model:', err));
 });
