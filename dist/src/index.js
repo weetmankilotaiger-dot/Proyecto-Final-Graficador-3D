@@ -93,8 +93,8 @@ function handleMouse(evento) {
     // Al hacer click, alternar pétalos abiertos/cerrados
     if (cv && cv.getObjs().length > 1) {
         petalsOpen = !petalsOpen;
-        // Abierto: 10 grados. Cerrado como capullo: 85 grados.
-        petalTargetAngle = petalsOpen ? 10 : 85;
+        // Abierto: -10 grados. Cerrado como capullo: -85 grados (hacia arriba).
+        petalTargetAngle = petalsOpen ? -10 : -85;
         const apSlider = document.getElementById('input-apertura');
         if (apSlider) {
             apSlider.value = petalTargetAngle.toString();
